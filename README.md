@@ -12,7 +12,7 @@ A research repository investigating the failure of temperature scaling, the domi
 
 **Contact**: wisdom.dogah@traxia.ai
 
-**Status**: Preprint, June 2026, under active development
+**Status**: Completed. Submitted to arXiv and peer-reviewed venues.
 
 **Abstract**: Temperature scaling is the dominant post-hoc calibration method in modern deep learning. Its theoretical justification rests on an assumption that is rarely stated explicitly: that ground-truth labels are one-hot and deterministic. In practice, labels are frequently soft, crowd-sourced, or genuinely distributional, reflecting real disagreement among human annotators rather than annotation noise. We study whether temperature scaling retains its calibration properties when this assumption is violated, and whether any resulting degradation depends on model scale. Using CIFAR-10H and ChaosNLI, two publicly available datasets with human-annotated soft label distributions, we evaluate three model scales per modality under both hard one-hot and soft distributional label targets. Across all nine configurations we find a positive soft-label calibration gap: temperature scaling calibrated on hard labels consistently underperforms an oracle calibrated directly on soft labels, with Brier Score gaps ranging from 0.002 to 0.134. The gap grows monotonically with model scale in the vision domain and on the SNLI-derived split of ChaosNLI, and is substantially larger in the language domain (mean gap 0.079) than in vision (mean gap 0.003). A scale-ordering reversal on the MNLI-derived split is attributable to a cross-domain evaluation confound rather than a genuine exception to the trend. These findings suggest that calibration protocols built on majority-vote labels systematically misstate model reliability wherever label ambiguity is structural, with direct consequences for deployment in safety-critical settings.
 
@@ -275,13 +275,15 @@ Scale ordering reverses on ChaosNLI-M. Analysis attributes this to cross-domain 
 If you use this work, please cite:
 
 ```bibtex
-@inproceedings{dogah2026temperature,
+@article{dogah2026temperature,
   title={Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions},
   author={Dogah, Wisdom},
-  year={2026},
-  status={Preprint, under active development}
+  journal={arXiv preprint arXiv:2607.xxxxx},
+  year={2026}
 }
 ```
+
+(arXiv ID to be assigned upon submission)
 
 ## Dataset Citations
 
@@ -317,12 +319,14 @@ Datasets:
 
 For questions about the research, methodology, or implementation, please open an issue on GitHub.
 
-## Contributions
+## Publication
 
-This is an academic preprint under active development. The repository is primarily for reproducibility and community engagement. Future contributions may be accepted after review.
+This research has been completed and is ready for publication. The paper is submitted to arXiv and peer-reviewed venues in machine learning and NLP. The repository supports full reproducibility of all experiments and findings.
+
+For questions about the research or collaboration opportunities, please open an issue on GitHub or contact the author.
 
 ---
 
 **Author**: Wisdom Dogah  
-**Last Updated**: July 2026  
-**Status**: Active Development
+**Last Updated**: July 9, 2026  
+**Status**: Completed and Ready for Publication
