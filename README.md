@@ -18,6 +18,8 @@ A research repository investigating the failure of temperature scaling, the domi
 
 **Keywords**: calibration; temperature scaling; soft labels; label ambiguity; Expected Calibration Error; Brier Score; model scale; uncertainty quantification.
 
+**arXiv Submission**: LaTeX source files are available in the `paper/` directory (`main.tex` and `references.bib`). See [ARXIV_SUBMISSION.md](paper/ARXIV_SUBMISSION.md) for compilation instructions and submission checklist.
+
 ## Research Overview
 
 ### Problem Statement
@@ -134,9 +136,12 @@ temperature-scaling-research/
 ├── LICENSE                                # CC-BY 4.0
 ├── .gitignore
 ├── paper/
+│   ├── main.tex                           # arXiv-ready LaTeX source
+│   ├── references.bib                     # BibTeX bibliography
+│   ├── ARXIV_SUBMISSION.md                # Submission guide & checklist
+│   ├── main.pdf                           # Compiled PDF (5 pages)
 │   ├── Temperature_Scaling_Is_Not_Enough.pdf
-│   ├── Temperature_Scaling_Is_Not_Enough.docx
-│   └── METADATA.md                       # Citations, publication details
+│   └── Temperature_Scaling_Is_Not_Enough.docx
 ├── datasets/
 │   ├── CIFAR-10H/
 │   │   ├── README.md                     # Download & extraction guide
