@@ -10,7 +10,7 @@ A research repository investigating the failure of temperature scaling, the domi
 
 **Affiliation**: Faculty of Computing & Mathematical Sciences, University of Mines and Technology (UMaT), Tarkwa, Ghana; BlackMatrix AI Research, Accra, Ghana
 
-**Contact**: wisdom.dogah@traxia.ai
+**Contact**: wisdom@blackmatrix.io
 
 **Status**: Completed. Submitted to arXiv and peer-reviewed venues.
 
