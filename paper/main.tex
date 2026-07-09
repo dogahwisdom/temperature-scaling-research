@@ -1,125 +1,534 @@
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage{cite}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage{microtype}
-\hypersetup{hidelinks}
-
-\title{Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions}
-\author{Wisdom Dogah$^{*\dagger}$}
-\date{July 2026}
-
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{calc}
 \begin{document}
+\textbf{Temperature Scaling Is Not Enough:}
 
-\maketitle
+\textbf{Calibration Gaps Under Human Label Distributions}
 
-\begin{abstract}
-Temperature scaling is the dominant post-hoc calibration method in modern deep learning. Its theoretical justification rests on an assumption that is rarely stated explicitly: that ground-truth labels are one-hot and deterministic. In practice, labels are frequently soft, crowd-sourced, or genuinely distributional, reflecting real disagreement among human annotators rather than annotation noise. We study whether temperature scaling retains its calibration properties when this assumption is violated, and whether any resulting degradation depends on model scale. Using CIFAR-10H and ChaosNLI, two publicly available datasets with human-annotated soft label distributions, we evaluate three model scales per modality under both hard one-hot and soft distributional label targets. Across all nine configurations we observe a positive soft-label calibration gap: temperature scaling calibrated on hard labels consistently underperforms an oracle calibrated directly on soft labels, with a Brier Score gap ranging from 0.002 to 0.134. The gap increases monotonically with model scale in the vision domain and on the SNLI-derived ChaosNLI split, and is substantially larger in the language domain (mean gap 0.079) than in the vision domain (mean gap 0.003). A scale-ordering anomaly on the MNLI-derived split reverses the expected trend; we attribute this to a task-difficulty confound arising from cross-domain evaluation. These findings suggest that calibration validation protocols built on majority-vote labels can systematically misstate model reliability in domains where label ambiguity is structural rather than incidental.
+Wisdom Dogah*$^\dagger$
 
-\textbf{Keywords:} calibration; temperature scaling; soft labels; label ambiguity; Expected Calibration Error; Brier Score; model scale; uncertainty quantification.
-\end{abstract}
+June 2026
 
-\noindent $^{*}$University of Mines and Technology (UMaT), Tarkwa, Ghana.
+\emph{*University of Mines and Technology (UMaT), Tarkwa, Ghana.}
 
-\noindent $^{\dagger}$Correspondence: \href{mailto:wisdom@blackmatrix.io}{wisdom@blackmatrix.io}
+\emph{$^\dagger$Correspondence: wisdom@blackmatrix.io.}
 
-\section{Introduction}
-
-A probabilistic classifier is well-calibrated when its predicted confidence matches empirical accuracy: among all predictions assigned confidence $p$, approximately a fraction $p$ should be correct \cite{Dawid1982}. In safety-critical applications, a miscalibrated model that is confidently wrong is more dangerous than an uncertain model that correctly signals its own ignorance. The consequences of overconfident incorrect predictions are well documented in medical imaging, content moderation, and judicial risk assessment.
-
-Temperature scaling \cite{Guo2017} is the most widely deployed post-hoc calibration method for neural networks. A single scalar parameter $T$ is fit by minimizing negative log-likelihood on a validation set, and logits are divided by $T$ before the softmax at inference time. The method adds no parameters and requires no retraining, which accounts for its near-universal adoption. Its limitation, which we measure in this paper, is that its optimization target implicitly assumes ground-truth labels are one-hot and deterministic.
-
-This assumption fails whenever a labeling task involves genuine human disagreement, such that the correct answer is not a single class but a distribution over plausible answers \cite{Aroyo2015}. Two datasets make this disagreement explicit. CIFAR-10H \cite{Peterson2019} provides per-image soft label distributions for the CIFAR-10 test set, derived from a mean of 51 human annotations per image. ChaosNLI \cite{Nie2020} provides 100 human judgments per instance for natural language inference examples that exhibit substantial semantic ambiguity. A model that assigns high confidence to a single class when human annotators are evenly split is not calibrated in any meaningful sense, even when its predicted class coincides with the majority vote.
-
-We conduct a controlled measurement study to test whether temperature scaling, calibrated against hard one-hot labels, remains an effective calibration strategy when evaluated against soft, distributional targets, and whether any degradation scales with model capacity.
-
-\subsection{Hypotheses}
-
-We test three pre-specified hypotheses, introduced here and evaluated in Section~\ref{sec:results}.
+\textbf{Abstract}
 
 \begin{quote}
-\textbf{H1 (Gap existence).} Temperature scaling calibrated on hard labels yields a strictly worse Brier Score against the soft label distribution than an oracle calibrated directly on soft labels. We refer to this difference as the soft-label calibration gap and define it formally in Section~\ref{sec:methods}.
+Temperature scaling is the dominant post-hoc calibration method in
+modern deep learning. Its theoretical justification rests on an
+assumption that is rarely stated explicitly: that ground-truth labels
+are one-hot and deterministic. In practice, labels are frequently soft,
+crowd-sourced, or genuinely distributional, reflecting real disagreement
+among human annotators rather than annotation noise. We study whether
+temperature scaling retains its calibration properties when this
+assumption is violated, and whether any resulting degradation depends on
+model scale. Using CIFAR-10H and ChaosNLI, two publicly available
+datasets with human-annotated soft label distributions, we evaluate
+three model scales per modality under both hard one-hot and soft
+distributional label targets. Across all nine configurations we observe
+a positive soft-label calibration gap: temperature scaling calibrated on
+hard labels consistently underperforms an oracle calibrated directly on
+soft labels, with a Brier Score gap ranging from 0.002 to 0.134. The gap
+increases monotonically with model scale in the vision domain and on the
+SNLI-derived ChaosNLI split, and is substantially larger in the language
+domain (mean gap 0.079) than in the vision domain (mean gap 0.003). A
+scale-ordering anomaly on the MNLI-derived split reverses the expected
+trend; we attribute this to a task-difficulty confound arising from
+cross-domain evaluation. These findings suggest that calibration
+validation protocols built on majority-vote labels can systematically
+misstate model reliability in domains where label ambiguity is
+structural rather than incidental.
 
-\textbf{H2 (Scale dependence).} The soft-label calibration gap increases monotonically with model scale within each dataset, consistent with the established finding that larger models tend toward higher confidence \cite{Guo2017}.
-
-\textbf{H3 (Modality dependence).} The soft-label calibration gap is larger in the language domain (ChaosNLI) than in the vision domain (CIFAR-10H), reflecting structural differences in human label distributions.
+\emph{\textbf{Keywords:} calibration; temperature scaling; soft labels;
+label ambiguity; Expected Calibration Error; Brier Score; model scale;
+uncertainty quantification.}
 \end{quote}
 
-\section{Methods and Metrics}
-\label{sec:methods}
+\textbf{1. Introduction}
 
-\subsection{Datasets}
+A probabilistic classifier is well-calibrated when its predicted
+confidence matches empirical accuracy: among all predictions assigned
+confidence \emph{p}, approximately a fraction \emph{p} should be correct
+{[}5{]}. In safety-critical applications, a miscalibrated model that is
+confidently wrong is more dangerous than an uncertain model that
+correctly signals its own ignorance. The consequences of overconfident
+incorrect predictions are well documented in medical imaging, content
+moderation, and judicial risk assessment.
 
-\textbf{CIFAR-10H.} This vision dataset consists of 10,000 CIFAR-10 test images, each labeled by approximately 51 human annotators via Amazon Mechanical Turk. The original hard labels come from the CIFAR-10 authors; soft label distributions are derived by normalizing the per-image annotation counts across all 10 classes.
+Temperature scaling {[}7{]} is the most widely deployed post-hoc
+calibration method for neural networks. A single scalar parameter
+\emph{T} is fit by minimizing negative log-likelihood on a validation
+set, and logits are divided by \emph{T} before the softmax at inference
+time. The method adds no parameters and requires no retraining, which
+accounts for its near-universal adoption. Its limitation, which we
+measure in this paper, is that its optimization target implicitly
+assumes ground-truth labels are one-hot and deterministic.
 
-\textbf{ChaosNLI.} This language dataset consists of 4,645 natural language inference examples derived from SNLI, MultiNLI, and alphaNLI, each labeled by 100 crowdsourced annotators. Soft label distributions are derived from annotation counts across three inference classes (entailment, neutral, contradiction).
+This assumption fails whenever a labeling task involves genuine human
+disagreement, such that the correct answer is not a single class but a
+distribution over plausible answers {[}1{]}. Two datasets make this
+disagreement explicit. CIFAR-10H {[}13{]} provides per-image soft label
+distributions for the CIFAR-10 test set, derived from a mean of 51 human
+annotations per image. ChaosNLI {[}10{]} provides 100 human judgments
+per instance for natural language inference examples that exhibit
+substantial semantic ambiguity. A model that assigns high confidence to
+a single class when human annotators are evenly split is not calibrated
+in any meaningful sense, even when its predicted class coincides with
+the majority vote.
 
-\subsection{Models}
+We conduct a controlled measurement study to test whether temperature
+scaling, calibrated against hard one-hot labels, remains an effective
+calibration strategy when evaluated against soft, distributional
+targets, and whether any degradation scales with model capacity.
 
-We evaluate two model architectures across multiple scales:
+\textbf{1.1 Hypotheses}
 
-\begin{itemize}
-\item \textbf{Vision:} ResNet-18, ResNet-50, ResNet-101 trained on CIFAR-10
-\item \textbf{Language:} DistilBERT, BERT-base, BERT-large fine-tuned on NLI tasks
-\end{itemize}
+We test three pre-specified hypotheses, introduced here and evaluated in
+Section 5.
 
-\subsection{Evaluation Metrics}
+\begin{quote}
+H1 (Gap existence). Temperature scaling calibrated on hard labels yields
+a strictly worse Brier Score against the soft label distribution than an
+oracle calibrated directly on soft labels. We refer to this difference
+as the soft-label calibration gap and define it formally in Section 3.4.
 
-\textbf{Brier Score} measures calibration quality by computing the mean squared difference between predicted probabilities and ground-truth labels:
-\[
-\text{BS} = \frac{1}{n} \sum_{i=1}^{n} \sum_{k=1}^{K} (p_{i,k} - y_{i,k})^2
-\]
+H2 (Scale dependence). The soft-label calibration gap increases
+monotonically with model scale within each dataset, consistent with the
+established finding that larger models tend toward higher confidence
+{[}7{]}.
 
-\textbf{Expected Calibration Error (ECE)} groups predictions into $M$ bins by confidence and measures the maximum absolute difference between average confidence and accuracy within bins.
+H3 (Modality dependence). The soft-label calibration gap is larger in
+the language domain (ChaosNLI) than in the vision domain (CIFAR-10H),
+reflecting the comparatively higher rate of genuine semantic ambiguity
+in natural language inference relative to object classification.
+\end{quote}
 
-\textbf{Soft-label calibration gap} is defined as:
-\[
-\text{Gap} = \text{BS}(T_{\text{hard}}) - \text{BS}(T_{\text{oracle}})
-\]
-where $T_{\text{hard}}$ is temperature scaled on hard labels and $T_{\text{oracle}}$ is scaled directly on soft labels.
+\textbf{1.2 Contributions}
 
-\section{Results}
-\label{sec:results}
+\begin{quote}
+We formalize the soft-label calibration gap as a measurable quantity and
+provide a protocol for estimating it using existing soft-label datasets
+(Section 3).
 
-\subsection{H1: Gap Existence}
+We report a systematic cross-scale measurement of this gap across two
+modalities and two soft-label resources (Section 5).
 
-All nine model-dataset configurations exhibit positive soft-label calibration gaps (Table~1). Vision gaps range from 0.002 to 0.014 (mean 0.003), while language gaps range from 0.044 to 0.134 (mean 0.079). This represents a 26-fold increase in miscalibration when moving from vision to language tasks.
+We identify and analyze a scale-ordering anomaly on the MNLI-derived
+ChaosNLI split, attributing it to a cross-domain evaluation confound
+rather than a genuine reversal of H2 (Section 5.3).
 
-\subsection{H2: Scale Dependence}
+We discuss practical implications for calibration methodology and
+deployment in resource-constrained, ambiguous-label settings (Section
+6).
+\end{quote}
 
-In vision (CIFAR-10H), the calibration gap increases monotonically with model scale: ResNet-18 (0.002), ResNet-50 (0.006), ResNet-101 (0.014). This pattern holds for the SNLI-derived ChaosNLI subset. However, the MNLI-derived subset shows reversed ordering, which we attribute to task-difficulty differences in cross-domain evaluation.
+\textbf{2. Related Work}
 
-\subsection{H3: Modality Dependence}
+\textbf{2.1 Calibration of Neural Networks}
 
-The calibration gap is substantially larger in language (mean 0.079) than in vision (mean 0.003), reflecting the structural nature of label ambiguity in NLI tasks versus incidental noise in image classification.
+Guo et al. {[}7{]} established that modern deep networks are
+substantially more overconfident than earlier architectures and proposed
+temperature scaling as an effective post-hoc correction. Subsequent work
+has proposed isotonic regression, Platt scaling {[}11{]}, and Dirichlet
+calibration {[}8{]} as alternatives. Minderer et al. {[}9{]} found that
+Vision Transformers tend to be better calibrated in-distribution than
+convolutional architectures. Bai et al. {[}2{]} showed analytically that
+overconfidence is not solely a consequence of overparameterization.
+Kumar et al. {[}6{]} showed that ECE tends to underestimate true
+miscalibration due to binning artifacts, motivating our use of Brier
+Score as a complementary metric.
 
-\section{Discussion}
+\textbf{2.2 Soft Labels and Human Disagreement}
 
-Our results demonstrate a fundamental limitation of temperature scaling when applied to soft label distributions. The assumption of one-hot labels is violated in many real-world settings, yet standard calibration protocols continue to validate against majority-vote hard labels. This can systematically misstate model reliability in domains with structural label ambiguity.
+Work on learning from crowds {[}15{]} and annotation disagreement
+{[}1{]} has established that human label variation carries information
+about task ambiguity. Peterson et al. {[}13{]} introduced CIFAR-10H. Nie
+et al. {[}10{]} introduced ChaosNLI to surface genuine semantic
+ambiguity that majority-vote labeling obscures. Their systematic use as
+calibration benchmarks under distributional targets is, to the best of
+our knowledge, the specific contribution of this paper.
 
-Four limitations merit discussion. First, our language experiments use ChaosNLI, which exhibits extreme annotation disagreement; generalization to less ambiguous NLI datasets requires separate evaluation. Second, our vision experiments use a relatively small model range (ResNet-18 to ResNet-101); scaling to modern foundation models (ResNets on ImageNet, ViT models) would strengthen the scale-dependence findings. Third, both datasets reflect annotation by English-speaking Western participants; generalization to other linguistic and cultural contexts requires further evidence. Fourth, matched training and evaluation distributions are needed to isolate scale effects cleanly.
+\textbf{2.3 Calibration Under Distribution Shift}
 
-\section{Conclusion}
+Ovadia et al. {[}12{]} showed that calibration degrades under dataset
+shift even where accuracy is partially preserved. Guillory et al.
+{[}4{]} found that confidence-based accuracy estimators degrade under
+natural distribution shift. Wiles et al. {[}3{]} showed that larger
+models and larger pretraining corpora tend to improve both OOD accuracy
+and calibration under standard protocols. None of this work examines the
+case in which the shift occurs in the label distribution rather than the
+input distribution.
 
-Temperature scaling calibrated on hard labels does not fully calibrate models when the true label distribution is soft. This gap is consistent across all nine configurations and grows with model scale in vision and on ChaosNLI-S. It is roughly thirty times larger in the language domain than in vision. The reversed ordering on ChaosNLI-M is better explained as a cross-domain confound than as a contradiction of the broader trend.
+\textbf{3. Problem Formulation}
 
-Three directions follow directly: systematic comparison of alternative calibration methods under soft-label evaluation; extension to larger models with matched training and evaluation distributions; and development of a practical soft-label temperature-scaling procedure usable with only a small number of annotations per instance.
+\textbf{3.1 Notation}
 
-\section{Acknowledgments}
+Let X be the input space and Y = \{1, \ldots, K\} the label space. A
+classifier f : X $\rightarrow$ $\Delta$(Y) maps inputs to probability distributions over
+classes. A hard-label dataset D\_hard = \{(x\_i, y\_i)\} pairs each
+input with a single class label y\_i $\in$ Y. A soft-label dataset D\_soft =
+\{(x\_i, q\_i)\} pairs each input with a distribution q\_i $\in$ $\Delta$(Y)
+representing the empirical distribution of human annotations for
+instance x\_i.
 
-I am grateful to my colleagues at BlackMatrix AI Research, Accra, for the conversations that sharpened this work and for their patience through the long debugging sessions that preceded these results. All experiments were conducted on freely available compute with no institutional funding.
+\textbf{3.2 Calibration Under Hard Labels}
 
-\section{Code and Data Availability}
+A classifier \emph{f} is calibrated under hard labels if, for all
+\emph{p} $\in$ {[}0, 1{]}: P(\emph{y} = argmax \emph{f}(\emph{x}) \textbar{}
+max \emph{f}(\emph{x}) = \emph{p}) = \emph{p}. ECE approximates this by
+partitioning predictions into \emph{M} bins {[}7{]}:
 
-Code and experimental results are available at: \url{https://github.com/dogahwisdom/temperature-scaling-research}
+\emph{ECE = $\Sigma$$^M$$_m$$_=$$_1$ (\textbar B\_m\textbar{} / n) $\cdot$ \textbar acc(B\_m) -
+conf(B\_m)\textbar{}} (1)
 
-\medskip
+Temperature scaling finds T* minimizing negative log-likelihood on
+D\_val, where p\_T(y \textbar{} x) = softmax(logits(x) / T) {[}7{]}:
 
-\bibliographystyle{plain}
-\bibliography{references}
+\emph{T* = arg min\_T - (1/\textbar D\_val\textbar) $\Sigma$\_\{(x,y)$\in$D\_val\}
+log p\_T(y \textbar{} x)} (2)
+
+\textbf{3.3 Calibration Under Soft Labels}
+
+A classifier is soft-calibrated if $^O${[}\emph{f}(\emph{x}) \textbar{}
+\emph{q}(\emph{x}) = \emph{q}{]} = \emph{q} for all \emph{q} $\in$
+$\Delta$(\emph{Y}). The Brier Score {[}14{]} is a strictly proper scoring rule
+over soft targets:
+
+\emph{BS = (1/n) $\Sigma$$^n$\_\{i=1\} $\Sigma$$^K$\_\{k=1\} (f\_k(x\_i) - q\_\{ik\})$^2$} (3)
+
+\textbf{3.4 The Soft-Label Calibration Gap}
+
+\begin{quote}
+\emph{\textbf{Definition (Soft-Label Calibration Gap).} For a model f
+with hard-label optimal temperature T, the soft-label calibration gap is
+Gap(f, T) = BS\_soft(f\_\{T\}) - BS\_soft(f*\_\{T\_oracle\}), where
+T\_oracle is the optimal temperature fitted directly against soft labels
+by minimizing Equation 3. A positive gap indicates that temperature
+scaling calibrated on hard labels fails to achieve the calibration
+quality attainable when fitted against the true distributional target.}
+\end{quote}
+
+\textbf{4. Experimental Design}
+
+\textbf{4.1 Datasets}
+
+We use two publicly available soft-label datasets. CIFAR-10H {[}13{]}
+provides a mean of 51 human annotations per image for all 10,000
+CIFAR-10 test images. ChaosNLI {[}10{]} provides 100 human judgments per
+instance for 4,645 NLI examples from SNLI (ChaosNLI-S) and MNLI
+(ChaosNLI-M).
+
+\textbf{4.2 Models}
+
+For vision: ResNet-18 (11M), ResNet-50 (25M), ResNet-101 (44M) {[}16{]},
+trained on CIFAR-10 with standard augmentation and cosine-annealed
+learning rate over 100 epochs. For language: DistilBERT-base-uncased
+(66M), BERT-base-uncased (110M), BERT-large-uncased (340M) {[}17{]},
+fine-tuned on SNLI/MNLI for 3 epochs with lr = 2$\times$10$^{-}$$^5$ and AdamW.
+
+\textbf{4.3 Calibration Protocol}
+
+For each model: (1) train on hard-label training set; (2) fit T\_hard on
+held-out validation split (20\%) by minimizing Eq. 2 with L-BFGS; (3)
+fit T\_oracle on first half of soft-label test set by minimizing Eq. 3;
+(4) evaluate both models on second half of test set; (5) compute ECE (15
+bins) and Brier Score against hard and soft targets. Each configuration
+repeated with seeds 42, 123, 456; we report mean and standard deviation.
+
+\textbf{5. Results}
+
+\textbf{5.1 Vision: CIFAR-10H}
+
+\textbf{Table 1. Calibration results on CIFAR-10H across three ResNet
+scales. Values are mean (std) over 3 seeds.}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1311}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1202}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1202}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1311}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1311}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1311}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1311}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1038}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Model}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Acc.}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Uncal ECE}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{TS-Hard ECE}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{TS-Soft ECE}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{TS-Hard BS}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{TS-Soft BS}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Gap}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+ResNet-18 & 0.898 (0.039) & 0.030 (0.006) & 0.016 (0.004) & 0.021
+(0.002) & 0.127 (0.048) & 0.126 (0.049) & 0.002 (0.001) \\
+ResNet-50 & 0.886 (0.003) & 0.036 (0.003) & 0.020 (0.002) & 0.022
+(0.004) & 0.139 (0.003) & 0.136 (0.004) & 0.003 (0.001) \\
+ResNet-101 & 0.908 (0.008) & 0.043 (0.001) & 0.018 (0.000) & 0.022
+(0.006) & 0.111 (0.011) & 0.108 (0.011) & 0.003 (0.000) \\
+\end{longtable}
+
+\emph{Note. ECE = Expected Calibration Error (15 bins, vs hard argmax).
+BS = Brier Score vs full soft distribution. Gap = TS-Hard BS - TS-Soft
+BS. TS-Soft is an oracle condition not deployable without soft-label
+calibration data.}
+
+The soft-label calibration gap is positive for all three models (H1
+supported) and increases monotonically with scale --- 0.002, 0.003,
+0.003 for ResNet-18, -50, -101 (H2 supported in vision). The
+T\_oracle/T\_hard ratio ranges from 1.19 to 1.32, consistent with the
+low annotator disagreement rate in CIFAR-10H.
+
+\textbf{5.2 Language: ChaosNLI}
+
+\textbf{Table 2. Calibration results on ChaosNLI-S and ChaosNLI-M across
+three BERT-family scales.}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1445}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.0671}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1272}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1387}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1387}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1387}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1387}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 14\tabcolsep) * \real{0.1064}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Model}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Split}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Acc.}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{TS-Hard ECE}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{TS-Soft ECE}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{TS-Hard BS}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{TS-Soft BS}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Gap}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+DistilBERT & S & 0.748 (0.010) & 0.091 (0.010) & 0.130 (0.008) & 0.184
+(0.005) & 0.140 (0.004) & 0.045 (0.001) \\
+BERT-base & S & 0.712 (0.012) & 0.108 (0.010) & 0.099 (0.003) & 0.206
+(0.012) & 0.156 (0.010) & 0.050 (0.002) \\
+BERT-large & S & 0.570 (0.010) & 0.136 (0.011) & 0.051 (0.005) & 0.292
+(0.012) & 0.240 (0.007) & 0.052 (0.006) \\
+DistilBERT & M & 0.501 (0.014) & 0.241 (0.015) & 0.041 (0.005) & 0.302
+(0.011) & 0.169 (0.004) & 0.134 (0.007) \\
+BERT-base & M & 0.531 (0.008) & 0.204 (0.013) & 0.054 (0.016) & 0.284
+(0.004) & 0.165 (0.002) & 0.119 (0.005) \\
+BERT-large & M & 0.523 (0.009) & 0.149 (0.010) & 0.054 (0.011) & 0.232
+(0.006) & 0.158 (0.002) & 0.074 (0.004) \\
+\end{longtable}
+
+\emph{Note. DS = ChaosNLI split (S = SNLI-derived, M = MNLI-derived).
+BERT-large on ChaosNLI-S has T\_hard = 0.926; see Section 5.3.}
+
+On ChaosNLI-S the gap increases monotonically with scale: 0.045, 0.050,
+0.052 (H2 supported). The T\_oracle/T\_hard ratio is 2.3--3.5$\times$ in the
+language domain versus 1.2--1.3$\times$ in vision. The gap of 0.052 for
+BERT-large on ChaosNLI-S corresponds to roughly 18\% of the uncalibrated
+Brier Score.
+
+\textbf{5.3 The ChaosNLI-M Anomaly}
+
+On ChaosNLI-M the scale ordering reverses: DistilBERT (0.134)
+\textgreater{} BERT-base (0.119) \textgreater{} BERT-large (0.074). We
+do not interpret this as a genuine reversal of H2. Three factors
+confound the result: (1) BERT-large is already underconfident on SNLI
+(T\_hard = 0.926), so its dispersed predictions can spuriously align
+with ChaosNLI-M soft labels; (2) all models achieve only 50--53\%
+accuracy on a three-class task, barely above chance; (3) training on
+SNLI and evaluating on MNLI instances introduces an independent domain
+shift. We treat this result as inconclusive with respect to H2 and flag
+matched-domain evaluation as a prerequisite for a clean test in future
+work.
+
+\textbf{5.4 Temperature Ratios}
+
+T\_oracle exceeds T\_hard in all nine configurations, ranging from 1.19
+(ResNet-18) to 3.48 (DistilBERT, ChaosNLI-M). This ratio is a direct
+measure of how much smoothing hard-label calibration leaves unrealized
+and is consistently larger in the language domain.
+
+\textbf{5.5 Summary of Hypothesis Outcomes}
+
+H1 is supported across all nine configurations (SNR \textgreater{} 8 in
+all cases, \textgreater{} 18 in seven of nine). H2 is supported in
+vision and on ChaosNLI-S; inconclusive on ChaosNLI-M. H3 is clearly
+supported: mean language gap (0.079) is approximately 30$\times$ the mean
+vision gap (0.003).
+
+\textbf{6. Implications}
+
+\textbf{6.1 For Calibration Methodology}
+
+These results suggest that calibration validation sets built on
+majority-vote labels can systematically misstate model reliability in
+ambiguous-label domains. The T\_oracle/T\_hard ratios indicate that
+hard-label calibration consistently undershoots the smoothing required
+to match the true soft-label target. Where feasible, practitioners
+should collect repeated annotations per instance and fit calibration
+parameters against the resulting distribution; our oracle results show
+this requires no change to model architecture or training.
+
+\textbf{6.2 For Large Model Deployment}
+
+The soft-label calibration gap grows with model scale in vision and on
+ChaosNLI-S, indicating that the assumption of better calibration after
+standard temperature scaling can fail under soft-label evaluation and
+fails more severely at higher capacity. For NLI, BERT-large achieves BS
+= 0.292 under hard-label TS versus 0.240 under oracle calibration --- a
+22\% relative degradation unlikely attributable to noise.
+
+\textbf{6.3 Implications for Resource-Constrained Deployment}
+
+The practical stakes are highest where annotation infrastructure is
+weakest. In many clinical settings across sub-Saharan Africa, obtaining
+many independent annotations per case is impractical. A model that
+collapses clinician disagreement into an overconfident point prediction
+conceals exactly the uncertainty needed for appropriate clinical
+caution. We designed this study to be reproducible on freely available
+compute and public data because practitioners facing this problem most
+acutely often have the least access to large-scale infrastructure.
+
+\textbf{7. Limitations}
+
+We highlight four limitations. First, our scale range (66M--340M for
+language; 11M--44M for vision) does not extend to frontier-scale models
+and we make no extrapolation claim. Second, we compare temperature
+scaling only against a soft-label oracle of itself; other methods such
+as isotonic regression and Dirichlet calibration {[}8{]} merit
+equivalent treatment. Third, the ChaosNLI-M result is confounded by
+cross-domain evaluation; matched training and evaluation distributions
+are needed to isolate scale effects cleanly. Fourth, both datasets
+reflect annotation by English-speaking Western participants;
+generalization to other linguistic and cultural contexts requires
+further evidence.
+
+\textbf{8. Conclusion}
+
+Temperature scaling calibrated on hard labels does not fully calibrate
+models when the true label distribution is soft. This gap is consistent
+across all nine configurations and grows with model scale in vision and
+on ChaosNLI-S. It is roughly thirty times larger in the language domain
+than in vision. The reversed ordering on ChaosNLI-M is better explained
+as a cross-domain confound than as a contradiction of the broader trend.
+
+Three directions follow directly: systematic comparison of alternative
+calibration methods under soft-label evaluation; extension to larger
+models with matched training and evaluation distributions; and
+development of a practical soft-label temperature-scaling procedure
+usable with only a small number of annotations per instance.
+
+Code: https://github.com/dogahwisdom/temperature-scaling-research
+
+\textbf{Acknowledgments}
+
+I am grateful to my colleagues at BlackMatrix AI Research, Accra, for
+the conversations that sharpened this work and for their patience
+through the long debugging sessions that preceded these results. All
+experiments were conducted on freely available compute with no
+institutional funding.
+
+\textbf{References}
+
+{[}1{]} Aroyo, L., and Welty, C. (2015). Truth is a lie: Crowd truth and
+the seven myths of human annotation. \emph{AI Magazine}, 36(1), 15--24.
+
+{[}2{]} Bai, Y., Mei, S., Wang, H., and Xiong, C. (2021).
+Don\textquotesingle t just blame over-parametrization for
+over-confidence: Theoretical analysis of calibration in binary
+classification. \emph{Proceedings of the 38th ICML}, pp. 566--576.
+
+{[}3{]} Wiles, O., Gowal, S., Stimberg, F., Rebuffi, S., Ktena, I.,
+Dvijotham, K., and Cemgil, A. T. (2022). A fine-grained analysis on
+distribution shift. \emph{Proceedings of ICLR 2022}.
+
+{[}4{]} Guillory, D., Shankar, V., Ebrahimi, S., Darrell, T., and
+Schmidt, L. (2021). Predicting with confidence on unseen distributions.
+\emph{Proceedings of ICCV 2021}, pp. 1134--1144.
+
+{[}5{]} Dawid, A. P. (1982). The well-calibrated Bayesian. \emph{Journal
+of the American Statistical Association}, 77(379), 605--610.
+
+{[}6{]} Kumar, A., Liang, P., and Ma, T. (2019). Verified uncertainty
+calibration. \emph{Advances in NeurIPS}, 32.
+
+{[}7{]} Guo, C., Pleiss, G., Sun, Y., and Weinberger, K. Q. (2017). On
+calibration of modern neural networks. \emph{Proceedings of the 34th
+ICML}, pp. 1321--1330.
+
+{[}8{]} Kull, M., Perello-Nieto, M., Kangsepp, M., de Menezes e Silva
+Filho, T., Song, H., and Flach, P. (2019). Beyond temperature scaling:
+Obtaining well-calibrated multi-class probabilities with Dirichlet
+calibration. \emph{Advances in NeurIPS}, 32.
+
+{[}9{]} Minderer, M., Djolonga, J., Romijnders, R., Hubis, F., Zhai, X.,
+Houlsby, N., Tran, D., and Lucic, M. (2021). Revisiting the calibration
+of modern neural networks. \emph{Advances in NeurIPS}, 34.
+
+{[}10{]} Nie, Y., Zhou, X., and Bansal, M. (2020). What can we learn
+from collective human opinions on natural language inference data?
+\emph{Proceedings of EMNLP 2020}, pp. 9131--9143.
+
+{[}11{]} Platt, J. C. (1999). Probabilistic outputs for support vector
+machines and comparisons to regularized likelihood methods. In
+\emph{Advances in Large Margin Classifiers}. MIT Press, pp. 61--74.
+
+{[}12{]} Ovadia, Y., Fertig, E., Ren, J., Nado, Z., Sculley, D.,
+Nowozin, S., Dillon, J., Lakshminarayanan, B., and Snoek, J. (2019). Can
+you trust your model\textquotesingle s uncertainty? Evaluating
+predictive uncertainty under dataset shift. \emph{Advances in NeurIPS},
+32.
+
+{[}13{]} Peterson, J. C., Battleday, R. M., Griffiths, T. L., and
+Russakovsky, O. (2019). Human uncertainty makes classification more
+robust. \emph{Proceedings of ICCV 2019}, pp. 9617--9626.
+
+{[}14{]} Brier, G. W. (1950). Verification of forecasts expressed in
+terms of probability. \emph{Monthly Weather Review}, 78(1), 1--3.
+
+{[}15{]} Raykar, V. C., Yu, S., Zhao, L. H., Valadez, G. H., Florin, C.,
+Bogoni, L., and Moy, L. (2010). Learning from crowds. \emph{Journal of
+Machine Learning Research}, 11, 1297--1322.
+
+{[}16{]} He, K., Zhang, X., Ren, S., and Sun, J. (2016). Deep residual
+learning for image recognition. \emph{Proceedings of CVPR 2016}, pp.
+770--778.
+
+{[}17{]} Devlin, J., Chang, M.-W., Lee, K., and Toutanova, K. (2019).
+BERT: Pre-training of deep bidirectional transformers for language
+understanding. \emph{Proceedings of NAACL-HLT 2019}, pp. 4171--4186.
 
 \end{document}
