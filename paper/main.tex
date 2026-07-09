@@ -1,0 +1,124 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{microtype}
+
+\title{Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions}
+\author{Wisdom Dogah$^{*\dagger}$}
+\date{July 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Temperature scaling is the dominant post-hoc calibration method in modern deep learning. Its theoretical justification rests on an assumption that is rarely stated explicitly: that ground-truth labels are one-hot and deterministic. In practice, labels are frequently soft, crowd-sourced, or genuinely distributional, reflecting real disagreement among human annotators rather than annotation noise. We study whether temperature scaling retains its calibration properties when this assumption is violated, and whether any resulting degradation depends on model scale. Using CIFAR-10H and ChaosNLI, two publicly available datasets with human-annotated soft label distributions, we evaluate three model scales per modality under both hard one-hot and soft distributional label targets. Across all nine configurations we observe a positive soft-label calibration gap: temperature scaling calibrated on hard labels consistently underperforms an oracle calibrated directly on soft labels, with a Brier Score gap ranging from 0.002 to 0.134. The gap increases monotonically with model scale in the vision domain and on the SNLI-derived ChaosNLI split, and is substantially larger in the language domain (mean gap 0.079) than in the vision domain (mean gap 0.003). A scale-ordering anomaly on the MNLI-derived split reverses the expected trend; we attribute this to a task-difficulty confound arising from cross-domain evaluation. These findings suggest that calibration validation protocols built on majority-vote labels can systematically misstate model reliability in domains where label ambiguity is structural rather than incidental.
+
+\textbf{Keywords:} calibration; temperature scaling; soft labels; label ambiguity; Expected Calibration Error; Brier Score; model scale; uncertainty quantification.
+\end{abstract}
+
+\noindent $^{*}$University of Mines and Technology (UMaT), Tarkwa, Ghana.
+
+\noindent $^{\dagger}$Correspondence: \href{mailto:wisdom@blackmatrix.io}{wisdom@blackmatrix.io}
+
+\section{Introduction}
+
+A probabilistic classifier is well-calibrated when its predicted confidence matches empirical accuracy: among all predictions assigned confidence $p$, approximately a fraction $p$ should be correct \cite{Dawid1982}. In safety-critical applications, a miscalibrated model that is confidently wrong is more dangerous than an uncertain model that correctly signals its own ignorance. The consequences of overconfident incorrect predictions are well documented in medical imaging, content moderation, and judicial risk assessment.
+
+Temperature scaling \cite{Guo2017} is the most widely deployed post-hoc calibration method for neural networks. A single scalar parameter $T$ is fit by minimizing negative log-likelihood on a validation set, and logits are divided by $T$ before the softmax at inference time. The method adds no parameters and requires no retraining, which accounts for its near-universal adoption. Its limitation, which we measure in this paper, is that its optimization target implicitly assumes ground-truth labels are one-hot and deterministic.
+
+This assumption fails whenever a labeling task involves genuine human disagreement, such that the correct answer is not a single class but a distribution over plausible answers \cite{Aroyo2015}. Two datasets make this disagreement explicit. CIFAR-10H \cite{Peterson2019} provides per-image soft label distributions for the CIFAR-10 test set, derived from a mean of 51 human annotations per image. ChaosNLI \cite{Nie2020} provides 100 human judgments per instance for natural language inference examples that exhibit substantial semantic ambiguity. A model that assigns high confidence to a single class when human annotators are evenly split is not calibrated in any meaningful sense, even when its predicted class coincides with the majority vote.
+
+We conduct a controlled measurement study to test whether temperature scaling, calibrated against hard one-hot labels, remains an effective calibration strategy when evaluated against soft, distributional targets, and whether any degradation scales with model capacity.
+
+\subsection{Hypotheses}
+
+We test three pre-specified hypotheses, introduced here and evaluated in Section~\ref{sec:results}.
+
+\begin{quote}
+\textbf{H1 (Gap existence).} Temperature scaling calibrated on hard labels yields a strictly worse Brier Score against the soft label distribution than an oracle calibrated directly on soft labels. We refer to this difference as the soft-label calibration gap and define it formally in Section~\ref{sec:methods}.
+
+\textbf{H2 (Scale dependence).} The soft-label calibration gap increases monotonically with model scale within each dataset, consistent with the established finding that larger models tend toward higher confidence \cite{Guo2017}.
+
+\textbf{H3 (Modality dependence).} The soft-label calibration gap is larger in the language domain (ChaosNLI) than in the vision domain (CIFAR-10H), reflecting structural differences in human label distributions.
+\end{quote}
+
+\section{Methods and Metrics}
+\label{sec:methods}
+
+\subsection{Datasets}
+
+\textbf{CIFAR-10H.} This vision dataset consists of 10,000 CIFAR-10 test images, each labeled by approximately 51 human annotators via Amazon Mechanical Turk. The original hard labels come from the CIFAR-10 authors; soft label distributions are derived by normalizing the per-image annotation counts across all 10 classes.
+
+\textbf{ChaosNLI.} This language dataset consists of 4,645 natural language inference examples derived from SNLI, MultiNLI, and alphaNLI, each labeled by 100 crowdsourced annotators. Soft label distributions are derived from annotation counts across three inference classes (entailment, neutral, contradiction).
+
+\subsection{Models}
+
+We evaluate two model architectures across multiple scales:
+
+\begin{itemize}
+\item \textbf{Vision:} ResNet-18, ResNet-50, ResNet-101 trained on CIFAR-10
+\item \textbf{Language:} DistilBERT, BERT-base, BERT-large fine-tuned on NLI tasks
+\end{itemize}
+
+\subsection{Evaluation Metrics}
+
+\textbf{Brier Score} measures calibration quality by computing the mean squared difference between predicted probabilities and ground-truth labels:
+\[
+\text{BS} = \frac{1}{n} \sum_{i=1}^{n} \sum_{k=1}^{K} (p_{i,k} - y_{i,k})^2
+\]
+
+\textbf{Expected Calibration Error (ECE)} groups predictions into $M$ bins by confidence and measures the maximum absolute difference between average confidence and accuracy within bins.
+
+\textbf{Soft-label calibration gap} is defined as:
+\[
+\text{Gap} = \text{BS}(T_{\text{hard}}) - \text{BS}(T_{\text{oracle}})
+\]
+where $T_{\text{hard}}$ is temperature scaled on hard labels and $T_{\text{oracle}}$ is scaled directly on soft labels.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{H1: Gap Existence}
+
+All nine model-dataset configurations exhibit positive soft-label calibration gaps (Table~1). Vision gaps range from 0.002 to 0.014 (mean 0.003), while language gaps range from 0.044 to 0.134 (mean 0.079). This represents a 26-fold increase in miscalibration when moving from vision to language tasks.
+
+\subsection{H2: Scale Dependence}
+
+In vision (CIFAR-10H), the calibration gap increases monotonically with model scale: ResNet-18 (0.002), ResNet-50 (0.006), ResNet-101 (0.014). This pattern holds for the SNLI-derived ChaosNLI subset. However, the MNLI-derived subset shows reversed ordering, which we attribute to task-difficulty differences in cross-domain evaluation.
+
+\subsection{H3: Modality Dependence}
+
+The calibration gap is substantially larger in language (mean 0.079) than in vision (mean 0.003), reflecting the structural nature of label ambiguity in NLI tasks versus incidental noise in image classification.
+
+\section{Discussion}
+
+Our results demonstrate a fundamental limitation of temperature scaling when applied to soft label distributions. The assumption of one-hot labels is violated in many real-world settings, yet standard calibration protocols continue to validate against majority-vote hard labels. This can systematically misstate model reliability in domains with structural label ambiguity.
+
+Four limitations merit discussion. First, our language experiments use ChaosNLI, which exhibits extreme annotation disagreement; generalization to less ambiguous NLI datasets requires separate evaluation. Second, our vision experiments use a relatively small model range (ResNet-18 to ResNet-101); scaling to modern foundation models (ResNets on ImageNet, ViT models) would strengthen the scale-dependence findings. Third, both datasets reflect annotation by English-speaking Western participants; generalization to other linguistic and cultural contexts requires further evidence. Fourth, matched training and evaluation distributions are needed to isolate scale effects cleanly.
+
+\section{Conclusion}
+
+Temperature scaling calibrated on hard labels does not fully calibrate models when the true label distribution is soft. This gap is consistent across all nine configurations and grows with model scale in vision and on ChaosNLI-S. It is roughly thirty times larger in the language domain than in vision. The reversed ordering on ChaosNLI-M is better explained as a cross-domain confound than as a contradiction of the broader trend.
+
+Three directions follow directly: systematic comparison of alternative calibration methods under soft-label evaluation; extension to larger models with matched training and evaluation distributions; and development of a practical soft-label temperature-scaling procedure usable with only a small number of annotations per instance.
+
+\section{Acknowledgments}
+
+I am grateful to my colleagues at BlackMatrix AI Research, Accra, for the conversations that sharpened this work and for their patience through the long debugging sessions that preceded these results. All experiments were conducted on freely available compute with no institutional funding.
+
+\section{Code and Data Availability}
+
+Code and experimental results are available at: \url{https://github.com/dogahwisdom/temperature-scaling-research}
+
+\medskip
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
