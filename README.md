@@ -139,42 +139,32 @@ temperature-scaling-research/
 │   ├── main.tex                           # arXiv-ready LaTeX source
 │   ├── references.bib                     # BibTeX bibliography
 │   ├── ARXIV_SUBMISSION.md                # Submission guide & checklist
-│   ├── main.pdf                           # Compiled PDF (5 pages)
+│   ├── main.pdf                           # Local compiled PDF (untracked)
 │   ├── Temperature_Scaling_Is_Not_Enough.pdf
 │   └── Temperature_Scaling_Is_Not_Enough.docx
 ├── datasets/
 │   ├── CIFAR-10H/
 │   │   ├── README.md                     # Download & extraction guide
-│   │   ├── cifar-10-python.tar.gz        # Archive (~163 MB)
-│   │   └── metadata.json                 # Dataset statistics
+│   │   └── cifar-10-python.tar.gz        # Local archive (~163 MB, untracked)
 │   └── ChaosNLI/
 │       ├── README.md                     # License info, source links
 │       ├── chaosNLI_snli.jsonl          # SNLI split (1,514 examples)
 │       ├── chaosNLI_mnli_m.jsonl        # MNLI split (1,599 examples)
-│       ├── chaosNLI_alphanli.jsonl      # AlphaNLI split (1,532 examples)
-│       └── metadata.json                 # Dataset statistics
+│       └── chaosNLI_alphanli.jsonl      # AlphaNLI split (1,532 examples)
 ├── experiments/
+│   ├── README.md                         # Experiment protocol and provenance
+│   ├── run_all.py                        # Full run orchestrator
+│   ├── aggregate.py                      # Mean/std aggregation script
 │   ├── vision/
-│   │   ├── train_resnet.py              # Training loop
-│   │   ├── evaluate.py                  # Calibration evaluation
-│   │   ├── config.yaml                  # Hyperparameters
-│   │   └── README.md
-│   ├── language/
-│   │   ├── train_bert.py                # Fine-tuning loop
-│   │   ├── evaluate.py                  # Calibration evaluation
-│   │   ├── config.yaml                  # Hyperparameters
-│   │   └── README.md
-│   └── utils/
-│       ├── calibration.py               # Temperature scaling, metrics
-│       ├── brier_score.py               # Soft-label evaluation
-│       ├── metrics.py                   # ECE, calibration metrics
-│       └── plotting.py                  # Figure generation
+│   │   └── train_resnet.py               # Vision training/evaluation pipeline
+│   └── language/
+│       └── train_bert.py                 # Language training/evaluation pipeline
 ├── results/
-│   ├── figures/                         # Generated plots
-│   ├── tables/                          # Result tables (CSV)
-│   └── results.md                       # Summary of findings
+│   ├── raw/                              # Per-seed raw result JSON files
+│   └── tables/
+│       ├── final_results.json            # Aggregated mean/std metrics
+│       └── final_results_summary.txt     # Aggregated text summary
 ├── requirements.txt                     # Python dependencies
-├── setup.py                             # Package setup
 └── .gitignore
 ```
 
@@ -220,43 +210,51 @@ with open('datasets/ChaosNLI/chaosNLI_snli.jsonl') as f:
 
 Vision experiments:
 ```bash
-cd experiments/vision
-python train_resnet.py --model resnet18 --seed 42
-python evaluate.py --model resnet18 --seed 42
+python experiments/vision/train_resnet.py --model_size resnet18 --seed 42 --epochs 30
 ```
 
 Language experiments:
 ```bash
-cd experiments/language
-python train_bert.py --model bert-base-uncased --dataset snli --seed 42
-python evaluate.py --model bert-base-uncased --dataset snli --seed 42
+python experiments/language/train_bert.py --model_name bert-base-uncased --dataset_type SNLI --seed 42 --epochs 1
+python experiments/language/train_bert.py --model_name bert-base-uncased --dataset_type MNLI --seed 42 --epochs 1
+```
+
+Full sweep + aggregation:
+```bash
+python experiments/run_all.py
+python experiments/aggregate.py
 ```
 
 ## Key Results Summary
 
 ### Vision (CIFAR-10H)
 - **Mean Gap**: 0.003 (small but consistent)
-- **Range**: 0.002-0.005
+- **Range**: 0.002-0.003
 - **Scale Effect**: Monotonic increase with model size
 - **Gap by Model**:
   - ResNet-18: 0.002
   - ResNet-50: 0.003
-  - ResNet-101: 0.005
+  - ResNet-101: 0.003
 
 ### Language (ChaosNLI)
-- **Mean Gap**: 0.079 (26 times larger than vision)
-- **Range**: 0.002-0.134
-- **Scale Effect**: Mostly monotonic (one anomaly on MNLI)
-- **Gap by Model**:
+- **Mean Gap**: 0.079 (about 26 times larger than vision)
+- **Range**: 0.045-0.134
+- **Scale Effect**: Monotonic on ChaosNLI-S; reversed on ChaosNLI-M
+- **ChaosNLI-S Gaps**:
   - DistilBERT: 0.045
-  - BERT-base: 0.079
-  - BERT-large: 0.134
+  - BERT-base: 0.050
+  - BERT-large: 0.052
+- **ChaosNLI-M Gaps**:
+  - DistilBERT: 0.134
+  - BERT-base: 0.119
+  - BERT-large: 0.074
 
 ### MNLI Split Anomaly
-Scale ordering reverses on ChaosNLI-M. Analysis attributes this to cross-domain evaluation confound:
-- Models fine-tuned on SNLI (in-domain)
-- Tested on ChaosNLI-M (out-of-domain)
-- Not a fundamental exception to the trend
+The stored runs use matched training/evaluation by split:
+- SNLI fine-tuning -> ChaosNLI-S evaluation
+- MNLI fine-tuning -> ChaosNLI-M evaluation
+
+So the anomaly is not caused by SNLI-only cross-domain evaluation.
 
 ## Related Work
 

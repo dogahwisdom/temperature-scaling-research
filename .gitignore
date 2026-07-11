@@ -71,6 +71,9 @@ results/figures/*.pdf
 results/figures/*.png
 results/tables/*.csv
 results/tables/*.json
+!results/tables/final_results.json
+!results/tables/final_results_summary.txt
+!results/raw/results_*.json
 
 # Models (trained weights)
 *.pth

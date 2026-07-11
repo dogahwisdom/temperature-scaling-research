@@ -1,0 +1,14 @@
+{
+  "model": "resnet18",
+  "seed": 42,
+  "T_star_hard": 1.0,
+  "T_star_soft": 1.0,
+  "test_accuracy": 0.8424,
+  "uncal_ece": 0.021609895569086046,
+  "ts_hard_ece": 0.021609895569086046,
+  "ts_soft_ece": 0.021609895569086046,
+  "uncal_bs_soft": 0.19543666089497105,
+  "ts_hard_bs_soft": 0.19543666089497105,
+  "ts_soft_bs_soft": 0.19543666089497105,
+  "gap": 0.0
+}

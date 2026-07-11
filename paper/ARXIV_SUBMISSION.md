@@ -75,6 +75,10 @@ Then compile with: `make`
 - [x] Email updated to wisdom@blackmatrix.io
 - [x] No Copilot or AI attribution in source code
 - [x] Professional formatting (no emojis, plain text)
+- [x] Experiment code for vision/language pipelines is present in repo
+- [x] Per-seed metrics files backing reported table values are present
+- [ ] Checkpoints/logs exist for reproducibility audit
+- [ ] End-to-end rerun from clean checkout has been validated
 
 ### Submission Steps
 
@@ -94,7 +98,7 @@ Then compile with: `make`
    - **Abstract**: Copy from `main.tex` (lines 18-31)
    - **Keywords**: calibration, temperature scaling, soft labels, label ambiguity, Expected Calibration Error, Brier Score, model scale, uncertainty quantification
 7. Comments field:
-   - "Code and datasets available at: https://github.com/dogahwisdom/temperature-scaling-research"
+   - "Manuscript sources, experiment scripts, and per-seed metric outputs are available at: https://github.com/dogahwisdom/temperature-scaling-research"
 8. Review and submit
 
 ### After Acceptance
@@ -143,7 +147,7 @@ Dogah, W. (2026). Temperature scaling is not enough: Calibration gaps under huma
 
 - **GitHub Repository**: https://github.com/dogahwisdom/temperature-scaling-research
 - **Datasets**: CIFAR-10H and ChaosNLI (see `datasets/` directory)
-- **Experiments**: Framework and code in `experiments/` directory
+- **Experiments**: Runnable scripts in `experiments/` with raw outputs in `results/raw/`
 - **Original Manuscript**: Temperature_Scaling_Is_Not_Enough.pdf (PDF version)
 
 ## Support

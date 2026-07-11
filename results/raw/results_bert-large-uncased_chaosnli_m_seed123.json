@@ -1,0 +1,15 @@
+{
+  "model": "bert-large-uncased",
+  "dataset": "ChaosNLI-M",
+  "seed": 123,
+  "T_star_hard": 1.0362457521300037,
+  "T_star_soft": 2.9947719893047196,
+  "test_accuracy": 0.515,
+  "uncal_ece": 0.16428420840694663,
+  "ts_hard_ece": 0.1568738215191562,
+  "ts_soft_ece": 0.048332493345677977,
+  "uncal_bs_soft": 0.24592108443401997,
+  "ts_hard_bs_soft": 0.24052392972238124,
+  "ts_soft_bs_soft": 0.1613959874942038,
+  "gap": 0.07912794222817743
+}

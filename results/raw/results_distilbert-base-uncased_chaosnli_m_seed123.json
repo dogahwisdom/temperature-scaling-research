@@ -1,0 +1,15 @@
+{
+  "model": "distilbert-base-uncased",
+  "dataset": "ChaosNLI-M",
+  "seed": 123,
+  "T_star_hard": 1.2478388760249919,
+  "T_star_soft": 4.617719845931668,
+  "test_accuracy": 0.48125,
+  "uncal_ece": 0.31186186649563996,
+  "ts_hard_ece": 0.2621608921358951,
+  "ts_soft_ece": 0.04030389596387599,
+  "uncal_bs_soft": 0.3680475658829463,
+  "ts_hard_bs_soft": 0.31775577994900794,
+  "ts_soft_bs_soft": 0.17451040123184028,
+  "gap": 0.14324537871716767
+}

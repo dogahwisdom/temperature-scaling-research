@@ -1,0 +1,108 @@
+MODEL: bert-base-uncased | DATASET: ChaosNLI-M | RUNS: 3
+  test_accuracy    : 0.5308 +/- 0.0077
+  uncal_ece        : 0.2482 +/- 0.0108
+  ts_hard_ece      : 0.2040 +/- 0.0129
+  ts_soft_ece      : 0.0544 +/- 0.0159
+  uncal_bs_soft    : 0.3244 +/- 0.0020
+  ts_hard_bs_soft  : 0.2843 +/- 0.0042
+  ts_soft_bs_soft  : 0.1649 +/- 0.0023
+  gap              : 0.1193 +/- 0.0047
+  T_star_hard      : 1.2228 +/- 0.0182
+  T_star_soft      : 4.1312 +/- 0.0723
+
+MODEL: bert-base-uncased | DATASET: ChaosNLI-S | RUNS: 3
+  test_accuracy    : 0.7125 +/- 0.0118
+  uncal_ece        : 0.1560 +/- 0.0161
+  ts_hard_ece      : 0.1077 +/- 0.0102
+  ts_soft_ece      : 0.0991 +/- 0.0033
+  uncal_bs_soft    : 0.2394 +/- 0.0178
+  ts_hard_bs_soft  : 0.2059 +/- 0.0123
+  ts_soft_bs_soft  : 0.1562 +/- 0.0101
+  gap              : 0.0497 +/- 0.0023
+  T_star_hard      : 1.3405 +/- 0.0626
+  T_star_soft      : 3.1270 +/- 0.2358
+
+MODEL: bert-large-uncased | DATASET: ChaosNLI-M | RUNS: 3
+  test_accuracy    : 0.5225 +/- 0.0089
+  uncal_ece        : 0.1713 +/- 0.0078
+  ts_hard_ece      : 0.1489 +/- 0.0104
+  ts_soft_ece      : 0.0543 +/- 0.0109
+  uncal_bs_soft    : 0.2492 +/- 0.0024
+  ts_hard_bs_soft  : 0.2320 +/- 0.0063
+  ts_soft_bs_soft  : 0.1580 +/- 0.0024
+  gap              : 0.0741 +/- 0.0041
+  T_star_hard      : 1.1226 +/- 0.0660
+  T_star_soft      : 3.1362 +/- 0.1384
+
+MODEL: bert-large-uncased | DATASET: ChaosNLI-S | RUNS: 3
+  test_accuracy    : 0.5702 +/- 0.0097
+  uncal_ece        : 0.1191 +/- 0.0109
+  ts_hard_ece      : 0.1355 +/- 0.0114
+  ts_soft_ece      : 0.0511 +/- 0.0047
+  uncal_bs_soft    : 0.2824 +/- 0.0131
+  ts_hard_bs_soft  : 0.2922 +/- 0.0121
+  ts_soft_bs_soft  : 0.2398 +/- 0.0070
+  gap              : 0.0524 +/- 0.0056
+  T_star_hard      : 0.9255 +/- 0.0282
+  T_star_soft      : 2.1127 +/- 0.1183
+
+MODEL: distilbert-base-uncased | DATASET: ChaosNLI-M | RUNS: 3
+  test_accuracy    : 0.5008 +/- 0.0139
+  uncal_ece        : 0.2921 +/- 0.0142
+  ts_hard_ece      : 0.2412 +/- 0.0149
+  ts_soft_ece      : 0.0410 +/- 0.0051
+  uncal_bs_soft    : 0.3546 +/- 0.0095
+  ts_hard_bs_soft  : 0.3025 +/- 0.0109
+  ts_soft_bs_soft  : 0.1688 +/- 0.0040
+  gap              : 0.1336 +/- 0.0069
+  T_star_hard      : 1.2673 +/- 0.0201
+  T_star_soft      : 4.4148 +/- 0.1525
+
+MODEL: distilbert-base-uncased | DATASET: ChaosNLI-S | RUNS: 3
+  test_accuracy    : 0.7481 +/- 0.0104
+  uncal_ece        : 0.1772 +/- 0.0143
+  ts_hard_ece      : 0.0914 +/- 0.0098
+  ts_soft_ece      : 0.1302 +/- 0.0076
+  uncal_bs_soft    : 0.2449 +/- 0.0096
+  ts_hard_bs_soft  : 0.1845 +/- 0.0051
+  ts_soft_bs_soft  : 0.1397 +/- 0.0041
+  gap              : 0.0448 +/- 0.0012
+  T_star_hard      : 1.8306 +/- 0.0548
+  T_star_soft      : 4.3366 +/- 0.1585
+
+MODEL: resnet101 | DATASET: CIFAR-10H | RUNS: 3
+  test_accuracy    : 0.9081 +/- 0.0078
+  uncal_ece        : 0.0435 +/- 0.0010
+  ts_hard_ece      : 0.0184 +/- 0.0004
+  ts_soft_ece      : 0.0219 +/- 0.0059
+  uncal_bs_soft    : 0.1203 +/- 0.0100
+  ts_hard_bs_soft  : 0.1112 +/- 0.0109
+  ts_soft_bs_soft  : 0.1079 +/- 0.0112
+  gap              : 0.0033 +/- 0.0004
+  T_star_hard      : 1.4321 +/- 0.0672
+  T_star_soft      : 1.8889 +/- 0.0889
+
+MODEL: resnet18 | DATASET: CIFAR-10H | RUNS: 3
+  test_accuracy    : 0.8979 +/- 0.0393
+  uncal_ece        : 0.0302 +/- 0.0062
+  ts_hard_ece      : 0.0156 +/- 0.0044
+  ts_soft_ece      : 0.0214 +/- 0.0019
+  uncal_bs_soft    : 0.1323 +/- 0.0446
+  ts_hard_bs_soft  : 0.1273 +/- 0.0481
+  ts_soft_bs_soft  : 0.1257 +/- 0.0493
+  gap              : 0.0017 +/- 0.0012
+  T_star_hard      : 1.2676 +/- 0.1895
+  T_star_soft      : 1.5074 +/- 0.3606
+
+MODEL: resnet50 | DATASET: CIFAR-10H | RUNS: 3
+  test_accuracy    : 0.8860 +/- 0.0027
+  uncal_ece        : 0.0363 +/- 0.0031
+  ts_hard_ece      : 0.0196 +/- 0.0021
+  ts_soft_ece      : 0.0223 +/- 0.0035
+  uncal_bs_soft    : 0.1431 +/- 0.0024
+  ts_hard_bs_soft  : 0.1386 +/- 0.0029
+  ts_soft_bs_soft  : 0.1357 +/- 0.0038
+  gap              : 0.0029 +/- 0.0009
+  T_star_hard      : 1.1978 +/- 0.0369
+  T_star_soft      : 1.5388 +/- 0.0554
+
