@@ -5,7 +5,6 @@ import torchvision.models as models
 import torch.nn as nn
 import numpy as np
 from torch.utils.data import DataLoader, random_split
-from scipy.optimize import minimize
 from scipy.special import softmax as scipy_softmax
 import json
 import os
@@ -13,12 +12,23 @@ import argparse
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from utils.calibration import (
+    fit_temperature_hard,
+    fit_temperature_soft,
+    compute_ece,
+    compute_brier_soft,
+    compute_accuracy,
+    MulticlassIsotonicCalibrator,
+)
+
 # Define device
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("Using device:", DEVICE)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_ROOT = REPO_ROOT / "datasets" / "CIFAR-10H"
-RESULTS_ROOT = REPO_ROOT / "results" / "raw"
+DEFAULT_RESULTS_ROOT = REPO_ROOT / "results" / "raw"
+LOGITS_ROOT = REPO_ROOT / "results" / "logits"
 
 def get_logits_and_labels(model, loader, device):
     """Extract raw logits and hard integer labels."""
@@ -31,57 +41,24 @@ def get_logits_and_labels(model, loader, device):
             all_labels.append(labels.numpy())
     return np.concatenate(all_logits).astype(np.float64), np.concatenate(all_labels)
 
-def nll_loss_hard(T, logits, labels):
-    """NLL for fitting T against hard one-hot labels."""
-    scaled = logits / T[0]
-    probs  = scipy_softmax(scaled, axis=1)
-    probs  = np.clip(probs, 1e-9, 1.0)
-    return -np.mean(np.log(probs[np.arange(len(labels)), labels]))
+def save_logits_bundle(prefix, val_logits, val_labels, oracle_logits, oracle_soft,
+                       eval_logits, eval_hard, eval_soft):
+    """Persist raw logits and labels for post-hoc calibration reuse."""
+    LOGITS_ROOT.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        LOGITS_ROOT / f"{prefix}.npz",
+        val_logits=val_logits,
+        val_labels=val_labels,
+        oracle_logits=oracle_logits,
+        oracle_soft=oracle_soft,
+        eval_logits=eval_logits,
+        eval_hard=eval_hard,
+        eval_soft=eval_soft,
+    )
+    print(f"Saved logits bundle to {LOGITS_ROOT / f'{prefix}.npz'}")
 
-def brier_loss_soft(T, logits, soft_targets):
-    """Brier Score for fitting T against soft label distributions."""
-    scaled = logits / T[0]
-    probs  = scipy_softmax(scaled, axis=1)
-    return np.mean(np.sum((probs - soft_targets) ** 2, axis=1))
-
-def fit_temperature_hard(logits, labels):
-    """Fit T* by minimising NLL against hard labels."""
-    result = minimize(nll_loss_hard, x0=[1.0], args=(logits, labels),
-                      method='L-BFGS-B', bounds=[(0.01, 20.0)],
-                      options={'maxiter': 100})
-    return float(result.x[0])
-
-def fit_temperature_soft(logits, soft_targets):
-    """Fit T* by minimising Brier Score against soft label distributions."""
-    result = minimize(brier_loss_soft, x0=[1.0], args=(logits, soft_targets),
-                      method='L-BFGS-B', bounds=[(0.01, 20.0)],
-                      options={'maxiter': 100})
-    return float(result.x[0])
-
-def compute_ece(probs, labels, n_bins=15):
-    """Expected Calibration Error with equal-width bins."""
-    bin_edges   = np.linspace(0, 1, n_bins + 1)
-    confidences = probs.max(axis=1)
-    predictions = probs.argmax(axis=1)
-    correct     = (predictions == labels).astype(float)
-    ece = 0.0
-    for i in range(n_bins):
-        mask = (confidences >= bin_edges[i]) & (confidences < bin_edges[i+1])
-        if mask.sum() == 0:
-            continue
-        acc  = correct[mask].mean()
-        conf = confidences[mask].mean()
-        ece += (mask.sum() / len(labels)) * abs(acc - conf)
-    return float(ece)
-
-def compute_brier_soft(probs, soft_targets):
-    """Brier Score against full soft label distribution. Lower is better."""
-    return float(np.mean(np.sum((probs - soft_targets) ** 2, axis=1)))
-
-def compute_accuracy(probs, labels):
-    return float((probs.argmax(axis=1) == labels).mean())
-
-def run_vision_experiment(model_size, seed, epochs=100, batch_size=128):
+def run_vision_experiment(model_size, seed, epochs=100, batch_size=128, results_root=None):
+    results_root = Path(results_root) if results_root else DEFAULT_RESULTS_ROOT
     # Set random seeds
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -149,6 +126,7 @@ def run_vision_experiment(model_size, seed, epochs=100, batch_size=128):
 
     print(f"\n==========================================")
     print(f"TRAINING {model_size} | Seed {seed} | Epochs {epochs}")
+    print(f"Results dir: {results_root}")
     print(f"==========================================")
 
     scaler = torch.cuda.amp.GradScaler()
@@ -188,14 +166,30 @@ def run_vision_experiment(model_size, seed, epochs=100, batch_size=128):
     T_soft = fit_temperature_soft(oracle_logits, oracle_soft)
     print(f"T_star (hard): {T_hard:.4f}  |  T_star (soft, oracle): {T_soft:.4f}")
 
+    # Persist logits for post-hoc analysis / re-fitting
+    logits_prefix = f"{model_size}_cifar10h_seed{seed}"
+    save_logits_bundle(
+        logits_prefix,
+        val_logits, val_labels,
+        oracle_logits, oracle_soft,
+        eval_logits, eval_hard, eval_soft,
+    )
+
     # Compute probabilities under each condition
     probs_uncal   = scipy_softmax(eval_logits,             axis=1)
     probs_ts_hard = scipy_softmax(eval_logits / T_hard,    axis=1)
     probs_ts_soft = scipy_softmax(eval_logits / T_soft,    axis=1)
 
+    # Isotonic regression baselines (hard-val and soft-oracle), same splits as TS
+    iso_hard = MulticlassIsotonicCalibrator().fit_hard(val_logits, val_labels)
+    iso_soft = MulticlassIsotonicCalibrator().fit_soft(oracle_logits, oracle_soft)
+    probs_iso_hard = iso_hard.predict_proba(eval_logits)
+    probs_iso_soft = iso_soft.predict_proba(eval_logits)
+
     # Compute all metrics
     results = {
         'model':            model_size,
+        'dataset':          'CIFAR-10H',
         'seed':             seed,
         'T_star_hard':      T_hard,
         'T_star_soft':      T_soft,
@@ -206,19 +200,30 @@ def run_vision_experiment(model_size, seed, epochs=100, batch_size=128):
         'uncal_bs_soft':    compute_brier_soft(probs_uncal,    eval_soft),
         'ts_hard_bs_soft':  compute_brier_soft(probs_ts_hard,  eval_soft),
         'ts_soft_bs_soft':  compute_brier_soft(probs_ts_soft,  eval_soft),
+        # Isotonic regression fields (additive; existing TS fields unchanged)
+        'iso_hard_ece':     compute_ece(probs_iso_hard, eval_hard),
+        'iso_soft_ece':     compute_ece(probs_iso_soft, eval_hard),
+        'iso_hard_bs_soft': compute_brier_soft(probs_iso_hard, eval_soft),
+        'iso_soft_bs_soft': compute_brier_soft(probs_iso_soft, eval_soft),
     }
     results['gap'] = results['ts_hard_bs_soft'] - results['ts_soft_bs_soft']
+    results['iso_gap'] = results['iso_hard_bs_soft'] - results['iso_soft_bs_soft']
 
     print("\n===== RESULTS =====")
     for k, v in results.items():
         print(f"  {k:25s}: {v:.6f}" if isinstance(v, float) else f"  {k:25s}: {v}")
 
     # Save results to file
-    RESULTS_ROOT.mkdir(parents=True, exist_ok=True)
-    fname = RESULTS_ROOT / f"results_{model_size}_seed{seed}.json"
+    results_root.mkdir(parents=True, exist_ok=True)
+    fname = results_root / f"results_{model_size}_seed{seed}.json"
     with open(fname, 'w') as f:
         json.dump(results, f, indent=2)
     print(f"\nSaved to {fname}")
+
+    del model
+    import gc
+    gc.collect()
+    torch.cuda.empty_cache()
     return results
 
 if __name__ == "__main__":
@@ -227,6 +232,8 @@ if __name__ == "__main__":
                         help="Model size or 'all'")
     parser.add_argument('--seed', type=str, default='all', help="Seed (e.g. 42, 123, 456) or 'all'")
     parser.add_argument('--epochs', type=int, default=30, help="Number of training epochs")
+    parser.add_argument('--results_dir', type=str, default=None,
+                        help="Directory for result JSON files (default: results/raw)")
     args = parser.parse_args()
 
     models_to_run = [args.model_size] if args.model_size != 'all' else ['resnet18', 'resnet50', 'resnet101']
@@ -236,9 +243,11 @@ if __name__ == "__main__":
     else:
         seeds_to_run = [int(args.seed)]
 
+    results_root = args.results_dir or str(DEFAULT_RESULTS_ROOT)
+
     for m in models_to_run:
         for s in seeds_to_run:
             try:
-                run_vision_experiment(m, s, epochs=args.epochs)
+                run_vision_experiment(m, s, epochs=args.epochs, results_root=results_root)
             except Exception as e:
                 print(f"FAILED: model={m}, seed={s}. Error: {str(e)}", file=sys.stderr)

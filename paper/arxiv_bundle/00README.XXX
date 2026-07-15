@@ -1,0 +1,3 @@
+% arXiv source bundle for:
+% Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions
+% Compile with: pdflatex main && bibtex main && pdflatex main && pdflatex main

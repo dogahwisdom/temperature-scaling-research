@@ -1,183 +1,55 @@
-# Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions
+# Temperature Scaling Is Not Enough
 
-A research repository investigating the failure of temperature scaling, the dominant post-hoc calibration method for neural networks, when applied to soft, crowd-sourced, or distributional labels that reflect genuine human disagreement.
+**Calibration Gaps Under Human Label Distributions**
 
-## Paper
+Author: **Wisdom Dogah**  
+Affiliations: University of Mines and Technology (UMaT), Tarkwa, Ghana; BlackMatrix AI Research, Accra, Ghana  
+Contact: [wisdom@blackmatrix.io](mailto:wisdom@blackmatrix.io)  
+Code: [github.com/dogahwisdom/temperature-scaling-research](https://github.com/dogahwisdom/temperature-scaling-research)
 
-**Title**: Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions
+## Abstract (short)
 
-**Author**: Wisdom Dogah
+Temperature scaling assumes one-hot, deterministic labels. Soft, crowd-sourced labels often violate that assumption. Across CIFAR-10H and ChaosNLI (nine model configurations), hard-label temperature scaling leaves a positive soft-label Brier gap versus a soft-label oracle (about 0.002 to 0.134). The gap is much larger in language than in vision, and the same qualitative pattern holds under multiclass isotonic regression.
 
-**Affiliation**: Faculty of Computing & Mathematical Sciences, University of Mines and Technology (UMaT), Tarkwa, Ghana; BlackMatrix AI Research, Accra, Ghana
+## Paper (arXiv-ready)
 
-**Contact**: wisdom@blackmatrix.io
+| File | Description |
+|------|-------------|
+| [`paper/main.tex`](paper/main.tex) | Manuscript source |
+| [`paper/references.bib`](paper/references.bib) | Bibliography |
+| [`paper/main.pdf`](paper/Temperature_Scaling_Is_Not_Enough.pdf) | Compiled PDF |
+| [`paper/Temperature_Scaling_arXiv_source.tar.gz`](paper/Temperature_Scaling_arXiv_source.tar.gz) | Upload this to arXiv |
+| [`paper/ARXIV_SUBMISSION.md`](paper/ARXIV_SUBMISSION.md) | Submission checklist |
 
-**Status**: Completed. Submitted to arXiv and peer-reviewed venues.
-
-**Abstract**: Temperature scaling is the dominant post-hoc calibration method in modern deep learning. Its theoretical justification rests on an assumption that is rarely stated explicitly: that ground-truth labels are one-hot and deterministic. In practice, labels are frequently soft, crowd-sourced, or genuinely distributional, reflecting real disagreement among human annotators rather than annotation noise. We study whether temperature scaling retains its calibration properties when this assumption is violated, and whether any resulting degradation depends on model scale. Using CIFAR-10H and ChaosNLI, two publicly available datasets with human-annotated soft label distributions, we evaluate three model scales per modality under both hard one-hot and soft distributional label targets. Across all nine configurations we find a positive soft-label calibration gap: temperature scaling calibrated on hard labels consistently underperforms an oracle calibrated directly on soft labels, with Brier Score gaps ranging from 0.002 to 0.134. The gap grows monotonically with model scale in the vision domain and on the SNLI-derived split of ChaosNLI, and is substantially larger in the language domain (mean gap 0.079) than in vision (mean gap 0.003). A scale-ordering reversal on the MNLI-derived split is attributable to a cross-domain evaluation confound rather than a genuine exception to the trend. These findings suggest that calibration protocols built on majority-vote labels systematically misstate model reliability wherever label ambiguity is structural, with direct consequences for deployment in safety-critical settings.
-
-**Keywords**: calibration; temperature scaling; soft labels; label ambiguity; Expected Calibration Error; Brier Score; model scale; uncertainty quantification.
-
-**arXiv Submission**: LaTeX source files are available in the `paper/` directory (`main.tex` and `references.bib`). See [ARXIV_SUBMISSION.md](paper/ARXIV_SUBMISSION.md) for compilation instructions and submission checklist.
-
-## Research Overview
-
-### Problem Statement
-
-Temperature scaling assumes that ground-truth labels are **one-hot and deterministic** (single correct answer). However, many real-world labeling tasks involve **genuine human disagreement**, where labels are soft, crowd-sourced, or distributional.
-
-**Central Question**: Does temperature scaling work when this assumption is violated?
-
-**Answer**: No. It causes systematic miscalibration.
-
-### Key Findings
-
-- **Gap Existence**: Positive soft-label calibration gap confirmed across all models (0.002-0.134 Brier Score)
-- **Scale Dependence**: Gap grows monotonically with model size in vision, mostly in language
-- **Modality Dependence**: Gap is 26× larger in language (NLI) than vision (CIFAR-10)
-
-### Safety-Critical Implications
-
-A model that predicts 90% confidence for class A when human annotators are evenly split (50/50) is **not actually well-calibrated**, even if its predicted class matches the majority vote. This has direct consequences for:
-
-- Medical diagnosis (overconfident wrong diagnosis)
-- Content moderation (confidently removing debatable content)
-- Legal risk assessment (overstated recidivism probability)
-
-## Research Design
-
-### Datasets
-
-#### CIFAR-10H (Vision)
-- **Source**: CIFAR-10 test set (10,000 images)
-- **Annotations**: Mean of 51 per image
-- **Classes**: 10 (airplane, automobile, bird, cat, deer, dog, frog, horse, ship, truck)
-- **Label Type**: Soft distributions over classes
-- **Total Annotations**: 510,000
-- **Location**: `datasets/CIFAR-10H/`
-
-#### ChaosNLI (Language)
-- **Source**: SNLI, MNLI, alphaNLI development sets
-- **Annotations**: 100 per example
-- **Instances**: 4,645 examples (ChaosNLI-S: 1,514; ChaosNLI-M: 1,599; ChaosNLI-A: 1,532)
-- **Task**: Natural Language Inference (entailment, neutral, contradiction)
-- **Total Annotations**: 464,500
-- **Location**: `datasets/ChaosNLI/`
-
-### Models Tested
-
-**Vision Domain** (trained on CIFAR-10):
-- ResNet-18 (11M parameters)
-- ResNet-50 (25M parameters)
-- ResNet-101 (44M parameters)
-
-**Language Domain** (fine-tuned on SNLI/MNLI):
-- DistilBERT-base-uncased (66M parameters)
-- BERT-base-uncased (110M parameters)
-- BERT-large-uncased (340M parameters)
-
-### Experimental Protocol
-
-For each model:
-
-1. **Training Phase**
-   - Train on hard-label (majority-vote) training set
-   - Standard hyperparameters (cosine annealing, Adam)
-   - 3 random seeds: 42, 123, 456
-
-2. **Calibration Phase**
-   - **T_hard**: Fit on 20% validation split, minimize NLL on hard labels
-   - **T_oracle**: Fit on first half of soft-label test set, minimize Brier Score
-
-3. **Evaluation Phase**
-   - Evaluate both on second half (held out)
-   - Metrics: ECE (15 bins) and Brier Score
-   - Report: Mean ± std over 3 seeds
-
-### Metrics
-
-**Expected Calibration Error (ECE)**
+```bash
+cd paper
+pdflatex -interaction=nonstopmode main.tex
+bibtex main
+pdflatex -interaction=nonstopmode main.tex
+pdflatex -interaction=nonstopmode main.tex
 ```
-ECE = Σ (|B_m| / n) × |acc(B_m) - conf(B_m)|
-```
-- Measures agreement between predicted confidence and accuracy (top-class only)
-- Standard metric but limited to argmax
 
-**Brier Score (Strictly Proper)**
-```
-BS = 1/n Σ_i Σ_k (f_k(x_i) - q_ik)²
-```
-- Measures MSE between predicted probabilities and human annotation distribution
-- Captures full predicted distribution
-- **Soft-Label Calibration Gap**: BS_hard - BS_oracle
-
-## Pre-specified Hypotheses
-
-### H1: Gap Existence
-Temperature scaling calibrated on hard labels yields strictly worse Brier Score against the soft label distribution than an oracle calibrated directly on soft labels.
-
-**Status**: CONFIRMED. Positive gaps across all 9 configurations.
-
-### H2: Scale Dependence
-The soft-label calibration gap grows monotonically with model scale within each dataset.
-
-**Status**: CONFIRMED. Clear monotonic growth in vision; mostly in language.
-
-### H3: Modality Dependence
-The gap is larger in the language domain (ChaosNLI) than in vision (CIFAR-10H).
-
-**Status**: CONFIRMED. 26 times larger in language (mean gap 0.079 vs. 0.003)
-
-## Repository Structure
+## Repository layout
 
 ```
 temperature-scaling-research/
-├── README.md                              # This file
-├── LICENSE                                # CC-BY 4.0
-├── .gitignore
-├── paper/
-│   ├── main.tex                           # arXiv-ready LaTeX source
-│   ├── references.bib                     # BibTeX bibliography
-│   ├── ARXIV_SUBMISSION.md                # Submission guide & checklist
-│   ├── main.pdf                           # Local compiled PDF (untracked)
-│   ├── Temperature_Scaling_Is_Not_Enough.pdf
-│   └── Temperature_Scaling_Is_Not_Enough.docx
-├── datasets/
-│   ├── CIFAR-10H/
-│   │   ├── README.md                     # Download & extraction guide
-│   │   └── cifar-10-python.tar.gz        # Local archive (~163 MB, untracked)
-│   └── ChaosNLI/
-│       ├── README.md                     # License info, source links
-│       ├── chaosNLI_snli.jsonl          # SNLI split (1,514 examples)
-│       ├── chaosNLI_mnli_m.jsonl        # MNLI split (1,599 examples)
-│       └── chaosNLI_alphanli.jsonl      # AlphaNLI split (1,532 examples)
+├── paper/                 # LaTeX manuscript + arXiv tarball
 ├── experiments/
-│   ├── README.md                         # Experiment protocol and provenance
-│   ├── run_all.py                        # Full run orchestrator
-│   ├── aggregate.py                      # Mean/std aggregation script
-│   ├── vision/
-│   │   └── train_resnet.py               # Vision training/evaluation pipeline
-│   └── language/
-│       └── train_bert.py                 # Language training/evaluation pipeline
+│   ├── vision/train_resnet.py
+│   ├── language/train_bert.py
+│   ├── language/finetune_bert_large_snli.py
+│   ├── utils/calibration.py
+│   ├── aggregate.py
+│   └── run_all.py
+├── datasets/              # CIFAR-10H soft labels + ChaosNLI JSONL
 ├── results/
-│   ├── raw/                              # Per-seed raw result JSON files
-│   └── tables/
-│       ├── final_results.json            # Aggregated mean/std metrics
-│       └── final_results_summary.txt     # Aggregated text summary
-├── requirements.txt                     # Python dependencies
-└── .gitignore
+│   ├── raw/               # Verified per-seed JSON (Table 1 / language baselines)
+│   └── tables/            # Aggregated summaries
+├── requirements.txt
+└── LICENSE                # CC-BY 4.0
 ```
 
-## Getting Started
-
-### Prerequisites
-
-- Python 3.8+
-- PyTorch 1.10+
-- Transformers (for BERT experiments)
-- NumPy, Pandas, Matplotlib, Seaborn
-
-### Installation
+## Setup
 
 ```bash
 git clone https://github.com/dogahwisdom/temperature-scaling-research.git
@@ -185,151 +57,54 @@ cd temperature-scaling-research
 pip install -r requirements.txt
 ```
 
-### Dataset Setup
+Place `cifar10h-probs.npy` under `datasets/CIFAR-10H/` (see `datasets/CIFAR-10H/README.md`). ChaosNLI JSONL files are already in `datasets/ChaosNLI/`.
 
-#### CIFAR-10H
-
-```bash
-cd datasets/CIFAR-10H
-tar -xzf cifar-10-python.tar.gz
-cd ../..
-```
-
-#### ChaosNLI
-
-No extraction needed. Files are in JSONL format (one JSON object per line).
+## Reproduce experiments
 
 ```bash
-# Example: Load ChaosNLI
-import json
-with open('datasets/ChaosNLI/chaosNLI_snli.jsonl') as f:
-    examples = [json.loads(line) for line in f]
-```
-
-### Running Experiments
-
-Vision experiments:
-```bash
+# Single vision run
 python experiments/vision/train_resnet.py --model_size resnet18 --seed 42 --epochs 30
-```
 
-Language experiments:
-```bash
+# Single language run
 python experiments/language/train_bert.py --model_name bert-base-uncased --dataset_type SNLI --seed 42 --epochs 1
-python experiments/language/train_bert.py --model_name bert-base-uncased --dataset_type MNLI --seed 42 --epochs 1
-```
 
-Full sweep + aggregation:
-```bash
+# Optional: build independent BERT-large SNLI checkpoint (not MNLI-derived)
+python experiments/language/finetune_bert_large_snli.py
+
+# Full sweep (writes under results/raw by default)
 python experiments/run_all.py
 python experiments/aggregate.py
 ```
 
-## Key Results Summary
+Use `--results_dir results/raw_v2` to avoid overwriting verified `results/raw/` files. Logits are saved under `results/logits/` when present.
 
-### Vision (CIFAR-10H)
-- **Mean Gap**: 0.003 (small but consistent)
-- **Range**: 0.002-0.003
-- **Scale Effect**: Monotonic increase with model size
-- **Gap by Model**:
-  - ResNet-18: 0.002
-  - ResNet-50: 0.003
-  - ResNet-101: 0.003
+## Key results (verified means over seeds 42, 123, 456)
 
-### Language (ChaosNLI)
-- **Mean Gap**: 0.079 (about 26 times larger than vision)
-- **Range**: 0.045-0.134
-- **Scale Effect**: Monotonic on ChaosNLI-S; reversed on ChaosNLI-M
-- **ChaosNLI-S Gaps**:
-  - DistilBERT: 0.045
-  - BERT-base: 0.050
-  - BERT-large: 0.052
-- **ChaosNLI-M Gaps**:
-  - DistilBERT: 0.134
-  - BERT-base: 0.119
-  - BERT-large: 0.074
+**Vision (CIFAR-10H)** — soft-label gap ≈ 0.002 / 0.003 / 0.003 for ResNet-18 / 50 / 101.
 
-### MNLI Split Anomaly
-The stored runs use matched training/evaluation by split:
-- SNLI fine-tuning -> ChaosNLI-S evaluation
-- MNLI fine-tuning -> ChaosNLI-M evaluation
+**Language (ChaosNLI)** — soft-label gap ≈ 0.045–0.134; mean language gap ≈ 0.079 (≈30× vision). ChaosNLI-S is monotonic in scale; ChaosNLI-M ordering is inconclusive (near-chance accuracy). BERT-large / ChaosNLI-S uses an independent SNLI checkpoint (`T_hard ≈ 0.980`).
 
-So the anomaly is not caused by SNLI-only cross-domain evaluation.
+**Isotonic regression** — positive soft-label gaps in all nine configurations (see `results/tables/final_results_v2_ts_vs_iso_gap.txt`).
 
-## Related Work
-
-### Calibration Methods
-- Temperature scaling (Guo et al., 2017)
-- Isotonic regression
-- Platt scaling
-- Dirichlet calibration (Malinin & Gales, 2018)
-
-### Soft Labels & Human Disagreement
-- Learning from crowds (foundational literature)
-- Annotation disagreement as signal (Peterson et al., 2019: CIFAR-10H)
-- ChaosNLI (Nie et al., 2020): Human disagreement in NLI
-
-### Calibration Under Distribution Shift
-- Ovadia et al. (2019): Calibration under input distribution shift
-- This work: First systematic study of label distribution shift
-
-## Citations
-
-If you use this work, please cite:
+## Citation
 
 ```bibtex
 @article{dogah2026temperature,
-  title={Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions},
-  author={Dogah, Wisdom},
-  journal={arXiv preprint arXiv:2607.xxxxx},
-  year={2026}
-}
-```
-
-(arXiv ID to be assigned upon submission)
-
-## Dataset Citations
-
-**CIFAR-10H**:
-```bibtex
-@article{peterson2019cifar,
-  title={Shared Predictive Models of Crowd Annotations},
-  author={Peterson, Joshua C and Bourgin, David D and Agrawal, Mayank and Griffiths, Thomas L and Russell, Stuart J},
-  journal={Nature Machine Intelligence},
-  year={2019}
-}
-```
-
-**ChaosNLI**:
-```bibtex
-@inproceedings{nie2020chaos,
-  title={Evaluating Understanding on Implicit Relations in Natural Language Inference},
-  author={Nie, Yixin and Williams, Adina and Dinan, Emily and Bansal, Mohit and Weston, Jason and Kiela, Douwe},
-  booktitle={Findings of the Association for Computational Linguistics: ACL},
-  year={2020}
+  title   = {Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions},
+  author  = {Dogah, Wisdom},
+  year    = {2026},
+  journal = {arXiv preprint},
+  note    = {arXiv ID to be assigned}
 }
 ```
 
 ## License
 
-This project is licensed under the Creative Commons Attribution 4.0 International License (CC-BY 4.0). See LICENSE file for details.
+Creative Commons Attribution 4.0 International (CC-BY 4.0). See [`LICENSE`](LICENSE).
 
-Datasets:
-- **CIFAR-10H**: Based on CIFAR-10. See original papers for licensing.
-- **ChaosNLI**: Creative Commons-Non Commercial 4.0 (Nie et al., 2020)
-
-## Questions and Discussion
-
-For questions about the research, methodology, or implementation, please open an issue on GitHub.
-
-## Publication
-
-This research has been completed and is ready for publication. The paper is submitted to arXiv and peer-reviewed venues in machine learning and NLP. The repository supports full reproducibility of all experiments and findings.
-
-For questions about the research or collaboration opportunities, please open an issue on GitHub or contact the author.
+Dataset licenses: follow CIFAR-10H / ChaosNLI source terms (ChaosNLI is CC-BY-NC 4.0).
 
 ---
 
-**Author**: Wisdom Dogah  
-**Last Updated**: July 9, 2026  
-**Status**: Completed and Ready for Publication
+**Author:** Wisdom Dogah  
+**Last updated:** July 2026

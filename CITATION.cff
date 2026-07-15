@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software or paper, please cite it as below."
+title: "Temperature Scaling Is Not Enough: Calibration Gaps Under Human Label Distributions"
+authors:
+  - family-names: Dogah
+    given-names: Wisdom
+    email: wisdom@blackmatrix.io
+    affiliation: "University of Mines and Technology (UMaT); BlackMatrix AI Research"
+version: "1.0.0"
+date-released: "2026-07-15"
+url: "https://github.com/dogahwisdom/temperature-scaling-research"
+license: CC-BY-4.0

@@ -1,23 +1,42 @@
 import os
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+import argparse
+import json
+import sys
+from pathlib import Path
+
+# Local repo has a datasets/ data folder that shadows HuggingFace `datasets`.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_EXPERIMENTS = Path(__file__).resolve().parents[1]
+sys.path = [
+    p for p in sys.path
+    if p not in ("", ".") and Path(p).resolve() != _REPO_ROOT.resolve()
+]
+sys.path.insert(0, str(_EXPERIMENTS))
+
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 import numpy as np
-from scipy.optimize import minimize
 from scipy.special import softmax as scipy_softmax
-import json
-import argparse
-import sys
-from pathlib import Path
+from utils.calibration import (
+    fit_temperature_hard,
+    fit_temperature_soft,
+    compute_ece,
+    compute_brier_soft,
+    compute_accuracy,
+    MulticlassIsotonicCalibrator,
+)
 
 # Define device
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print("Using device:", DEVICE)
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = _REPO_ROOT
 CHAOSNLI_ROOT = REPO_ROOT / "datasets" / "ChaosNLI"
-RESULTS_ROOT = REPO_ROOT / "results" / "raw"
+DEFAULT_RESULTS_ROOT = REPO_ROOT / "results" / "raw"
+LOGITS_ROOT = REPO_ROOT / "results" / "logits"
+INDEPENDENT_SNLI_CKPT = REPO_ROOT / "checkpoints" / "bert-large-uncased-snli-independent"
 
 # Label map
 label_map = {'e': 0, 'n': 1, 'c': 2}
@@ -65,76 +84,51 @@ def get_nli_logits(model, premises, hypotheses, tokenizer, device, batch_size=64
         all_logits.append(out.logits.cpu().numpy())
     return np.concatenate(all_logits).astype(np.float64)
 
-def nll_loss_hard(T, logits, labels):
-    """NLL for fitting T against hard one-hot labels."""
-    scaled = logits / T[0]
-    probs  = scipy_softmax(scaled, axis=1)
-    probs  = np.clip(probs, 1e-9, 1.0)
-    return -np.mean(np.log(probs[np.arange(len(labels)), labels]))
-
-def brier_loss_soft(T, logits, soft_targets):
-    """Brier Score for fitting T against soft label distributions."""
-    scaled = logits / T[0]
-    probs  = scipy_softmax(scaled, axis=1)
-    return np.mean(np.sum((probs - soft_targets) ** 2, axis=1))
-
-def fit_temperature_hard(logits, labels):
-    """Fit T* by minimising NLL against hard labels."""
-    result = minimize(nll_loss_hard, x0=[1.0], args=(logits, labels),
-                      method='L-BFGS-B', bounds=[(0.01, 20.0)],
-                      options={'maxiter': 100})
-    return float(result.x[0])
-
-def fit_temperature_soft(logits, soft_targets):
-    """Fit T* by minimising Brier Score against soft label distributions."""
-    result = minimize(brier_loss_soft, x0=[1.0], args=(logits, soft_targets),
-                      method='L-BFGS-B', bounds=[(0.01, 20.0)],
-                      options={'maxiter': 100})
-    return float(result.x[0])
-
-def compute_ece(probs, labels, n_bins=15):
-    """Expected Calibration Error with equal-width bins."""
-    bin_edges   = np.linspace(0, 1, n_bins + 1)
-    confidences = probs.max(axis=1)
-    predictions = probs.argmax(axis=1)
-    correct     = (predictions == labels).astype(float)
-    ece = 0.0
-    for i in range(n_bins):
-        mask = (confidences >= bin_edges[i]) & (confidences < bin_edges[i+1])
-        if mask.sum() == 0:
-            continue
-        acc  = correct[mask].mean()
-        conf = confidences[mask].mean()
-        ece += (mask.sum() / len(labels)) * abs(acc - conf)
-    return float(ece)
-
-def compute_brier_soft(probs, soft_targets):
-    """Brier Score against full soft label distribution. Lower is better."""
-    return float(np.mean(np.sum((probs - soft_targets) ** 2, axis=1)))
-
-def compute_accuracy(probs, labels):
-    return float((probs.argmax(axis=1) == labels).mean())
+def save_logits_bundle(prefix, val_logits, val_labels, oracle_logits, oracle_soft,
+                       eval_logits, eval_hard, eval_soft):
+    """Persist raw logits and labels for post-hoc calibration reuse."""
+    LOGITS_ROOT.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(
+        LOGITS_ROOT / f"{prefix}.npz",
+        val_logits=val_logits,
+        val_labels=val_labels,
+        oracle_logits=oracle_logits,
+        oracle_soft=oracle_soft,
+        eval_logits=eval_logits,
+        eval_hard=eval_hard,
+        eval_soft=eval_soft,
+    )
+    print(f"Saved logits bundle to {LOGITS_ROOT / f'{prefix}.npz'}")
 
 model_mapping = {
     ('distilbert-base-uncased', 'SNLI'): 'kweinmeister/distilbert-snli',
     ('bert-base-uncased', 'SNLI'): 'textattack/bert-base-uncased-SNLI',
-    ('bert-large-uncased', 'SNLI'): 'yoshitomo-matsubara/bert-large-uncased-mnli',  # Start with MNLI checkpoint and adapt to SNLI
+    # Independent SNLI checkpoint fine-tuned from base bert-large-uncased (NOT MNLI).
+    ('bert-large-uncased', 'SNLI'): str(INDEPENDENT_SNLI_CKPT),
     ('distilbert-base-uncased', 'MNLI'): 'textattack/distilbert-base-uncased-MNLI',
     ('bert-base-uncased', 'MNLI'): 'textattack/bert-base-uncased-MNLI',
     ('bert-large-uncased', 'MNLI'): 'yoshitomo-matsubara/bert-large-uncased-mnli',
 }
 
-def run_language_experiment(model_name, dataset_type, seed, epochs=1):
+def run_language_experiment(model_name, dataset_type, seed, epochs=1, results_root=None):
     # dataset_type must be either 'SNLI' or 'MNLI'
+    results_root = Path(results_root) if results_root else DEFAULT_RESULTS_ROOT
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
 
     model_id = model_mapping[(model_name, dataset_type)]
+    if model_name == 'bert-large-uncased' and dataset_type == 'SNLI':
+        if not Path(model_id).exists():
+            raise FileNotFoundError(
+                f"Independent SNLI checkpoint not found at {model_id}. "
+                f"Run: python experiments/language/finetune_bert_large_snli.py"
+            )
 
     print(f"\n==========================================")
     print(f"TRAINING {model_name} on {dataset_type} | Seed {seed} | Epochs {epochs}")
     print(f"Using Hugging Face Model ID: {model_id}")
+    print(f"Results dir: {results_root}")
     print(f"==========================================")
 
     # Tokenizer
@@ -281,9 +275,26 @@ def run_language_experiment(model_name, dataset_type, seed, epochs=1):
     eval_hard   = chaos_hard[n_half:]
     eval_soft   = chaos_soft[n_half:]
 
+    # Persist logits for post-hoc analysis / re-fitting
+    model_short = model_name.replace('/', '_')
+    eval_slug = eval_dataset_name.lower().replace('-', '_')
+    logits_prefix = f"{model_short}_{eval_slug}_seed{seed}"
+    save_logits_bundle(
+        logits_prefix,
+        val_logits, val_labels,
+        oracle_logits, oracle_soft,
+        eval_logits, eval_hard, eval_soft,
+    )
+
     probs_uncal   = scipy_softmax(eval_logits,             axis=1)
     probs_ts_hard = scipy_softmax(eval_logits / T_hard,    axis=1)
     probs_ts_soft = scipy_softmax(eval_logits / T_soft,    axis=1)
+
+    # Isotonic regression baselines (hard-val and soft-oracle), same splits as TS
+    iso_hard = MulticlassIsotonicCalibrator().fit_hard(val_logits, val_labels)
+    iso_soft = MulticlassIsotonicCalibrator().fit_soft(oracle_logits, oracle_soft)
+    probs_iso_hard = iso_hard.predict_proba(eval_logits)
+    probs_iso_soft = iso_soft.predict_proba(eval_logits)
 
     results = {
         'model':            model_name,
@@ -298,17 +309,22 @@ def run_language_experiment(model_name, dataset_type, seed, epochs=1):
         'uncal_bs_soft':    compute_brier_soft(probs_uncal,    eval_soft),
         'ts_hard_bs_soft':  compute_brier_soft(probs_ts_hard,  eval_soft),
         'ts_soft_bs_soft':  compute_brier_soft(probs_ts_soft,  eval_soft),
+        # Isotonic regression fields (additive; existing TS fields unchanged)
+        'iso_hard_ece':     compute_ece(probs_iso_hard, eval_hard),
+        'iso_soft_ece':     compute_ece(probs_iso_soft, eval_hard),
+        'iso_hard_bs_soft': compute_brier_soft(probs_iso_hard, eval_soft),
+        'iso_soft_bs_soft': compute_brier_soft(probs_iso_soft, eval_soft),
     }
     results['gap'] = results['ts_hard_bs_soft'] - results['ts_soft_bs_soft']
+    results['iso_gap'] = results['iso_hard_bs_soft'] - results['iso_soft_bs_soft']
 
     print(f"\n===== {eval_dataset_name} RESULTS =====")
     for k, v in results.items():
         print(f"  {k:25s}: {v:.6f}" if isinstance(v, float) else f"  {k:25s}: {v}")
 
     # Save results to file
-    model_short = model_name.replace('/', '_')
-    RESULTS_ROOT.mkdir(parents=True, exist_ok=True)
-    fname = RESULTS_ROOT / f"results_{model_short}_{eval_dataset_name.lower().replace('-', '_')}_seed{seed}.json"
+    results_root.mkdir(parents=True, exist_ok=True)
+    fname = results_root / f"results_{model_short}_{eval_slug}_seed{seed}.json"
     with open(fname, 'w') as f:
         json.dump(results, f, indent=2)
     print(f"Saved to {fname}")
@@ -319,8 +335,8 @@ def run_language_experiment(model_name, dataset_type, seed, epochs=1):
     gc.collect()
     torch.cuda.empty_cache()
 
-    # We do NOT save model weight checkpoints here to save disk space,
-    # as the brief only asks for result JSON files and summary logs.
+    # Model weight checkpoints from experiment runs are not retained (disk);
+    # logits bundles under results/logits/ are saved instead.
     return results
 
 if __name__ == "__main__":
@@ -329,6 +345,8 @@ if __name__ == "__main__":
     parser.add_argument('--dataset_type', type=str, choices=['SNLI', 'MNLI', 'all'], default='all')
     parser.add_argument('--seed', type=str, default='all', help="Seed (e.g. 42, 123, 456) or 'all'")
     parser.add_argument('--epochs', type=int, default=1, help="Number of training epochs")
+    parser.add_argument('--results_dir', type=str, default=None,
+                        help="Directory for result JSON files (default: results/raw)")
     args = parser.parse_args()
 
     models_to_run = [args.model_name] if args.model_name != 'all' else ['distilbert-base-uncased', 'bert-base-uncased', 'bert-large-uncased']
@@ -339,11 +357,13 @@ if __name__ == "__main__":
     else:
         seeds_to_run = [int(args.seed)]
 
+    results_root = args.results_dir or str(DEFAULT_RESULTS_ROOT)
+
     for m in models_to_run:
         for d in datasets_to_run:
             for s in seeds_to_run:
                 try:
-                    run_language_experiment(m, d, s, epochs=args.epochs)
+                    run_language_experiment(m, d, s, epochs=args.epochs, results_root=results_root)
                 except Exception as e:
                     import traceback
                     traceback.print_exc()

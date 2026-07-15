@@ -1,58 +1,49 @@
-# Experiment Documentation
+# Experiments
 
-This directory contains the scripts used to produce the stored per-seed results in
-`results/raw/` and the aggregated summaries in `results/tables/`.
+Scripts that produce the per-seed metrics in `results/raw/` (and optional
+re-runs under `results/raw_v2/`).
 
-## Files
+## Pipelines
 
-- `vision/train_resnet.py`:
-  Vision pipeline for ResNet-18/50/101 on CIFAR-10 with CIFAR-10H soft-label evaluation.
-- `language/train_bert.py`:
-  Language pipeline for DistilBERT/BERT-base/BERT-large, with separate runs for
-  `SNLI` and `MNLI`, evaluated on `ChaosNLI-S` and `ChaosNLI-M` respectively.
-- `run_all.py`:
-  Orchestrates all model/dataset/seed runs and skips already computed outputs.
-- `aggregate.py`:
-  Aggregates raw per-seed JSON files into mean/std summaries.
+| Script | Role |
+|--------|------|
+| `vision/train_resnet.py` | ResNet-18/50/101 on CIFAR-10 + CIFAR-10H soft-label eval |
+| `language/train_bert.py` | DistilBERT / BERT-base / BERT-large on SNLI or MNLI → ChaosNLI |
+| `language/finetune_bert_large_snli.py` | Independent BERT-large SNLI checkpoint from `bert-large-uncased` |
+| `utils/calibration.py` | Shared temperature scaling + multiclass isotonic regression |
+| `run_all.py` | Orchestrate all configs; supports `--results_dir` |
+| `aggregate.py` | Mean/std tables, including TS vs isotonic gaps |
 
-## Output Artifacts
-
-- Raw run files: `results/raw/results_*.json` (27 files, 9 vision + 18 language).
-- Aggregated summaries:
-  - `results/tables/final_results.json`
-  - `results/tables/final_results_summary.txt`
-
-## Protocol Implemented
+## Protocol
 
 For each model and seed (`42`, `123`, `456`):
 
-1. Train/fine-tune model on hard labels.
-2. Fit `T_star_hard` on hard-label validation NLL.
-3. Fit `T_star_soft` on first half of soft-label test set (oracle).
-4. Evaluate on held-out second half and save:
-   - accuracy
-   - uncalibrated ECE/Brier
-   - TS-hard ECE/Brier
-   - TS-soft ECE/Brier
-   - gap = `ts_hard_bs_soft - ts_soft_bs_soft`
+1. Train / adapt on hard labels.
+2. Fit `T_hard` on hard-label validation NLL.
+3. Fit `T_oracle` on the first half of the soft-label test set (Brier).
+4. Fit hard and soft isotonic calibrators on the same splits.
+5. Evaluate on the held-out second half; save metrics JSON and logits (`.npz`).
 
-## Important Clarification: SNLI vs MNLI
+Vision default: 30 epochs. Language default: 1 epoch on a 10{,}000-example subset,
+starting from a domain-matched checkpoint. BERT-large SNLI uses
+`checkpoints/bert-large-uncased-snli-independent/` (built by
+`finetune_bert_large_snli.py`), not an MNLI checkpoint.
 
-The language script runs **separate fine-tuning paths**:
+## Matched-domain language splits
 
-- `dataset_type=SNLI` -> evaluate on `ChaosNLI-S`
-- `dataset_type=MNLI` -> evaluate on `ChaosNLI-M`
+- `dataset_type=SNLI` → evaluate on ChaosNLI-S  
+- `dataset_type=MNLI` → evaluate on ChaosNLI-M  
 
-This is matched-domain training/evaluation by split, not SNLI-only training for both.
-
-## Reproduction Command
+## Reproduction
 
 ```bash
-python experiments/run_all.py
-python experiments/aggregate.py
+python experiments/run_all.py --results_dir results/raw
+python experiments/aggregate.py --results_dir results/raw
+
+# Re-run without overwriting verified raw files
+python experiments/run_all.py --results_dir results/raw_v2
+python experiments/aggregate.py --results_dir results/raw_v2 --out_prefix final_results_v2
 ```
 
-## Notes
-
-- The provided artifact set contains per-seed metric outputs and aggregated summaries.
-- Model checkpoints are not saved by the current scripts; only metric JSON outputs are persisted.
+Checkpoints under `checkpoints/` and logits under `results/logits/` are local
+artifacts (gitignored) and can be regenerated from the scripts above.

@@ -3,13 +3,15 @@ import glob
 import numpy as np
 from collections import defaultdict
 from pathlib import Path
+import argparse
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-RAW_RESULTS_DIR = REPO_ROOT / "results" / "raw"
+DEFAULT_RAW_RESULTS_DIR = REPO_ROOT / "results" / "raw"
 TABLES_DIR = REPO_ROOT / "results" / "tables"
 
-def aggregate_results():
-    all_files = glob.glob(str(RAW_RESULTS_DIR / 'results_*.json'))
+def aggregate_results(raw_results_dir=None, out_prefix="final_results"):
+    raw_results_dir = Path(raw_results_dir) if raw_results_dir else DEFAULT_RAW_RESULTS_DIR
+    all_files = glob.glob(str(raw_results_dir / 'results_*.json'))
     all_results = []
     for f in all_files:
         try:
@@ -18,7 +20,7 @@ def aggregate_results():
         except Exception as e:
             print(f"Error reading {f}: {e}")
 
-    print(f"Total result files found: {len(all_results)}")
+    print(f"Total result files found: {len(all_results)} in {raw_results_dir}")
 
     # Group by model and dataset
     grouped = defaultdict(list)
@@ -32,13 +34,18 @@ def aggregate_results():
         'test_accuracy',
         'uncal_ece', 'ts_hard_ece', 'ts_soft_ece',
         'uncal_bs_soft', 'ts_hard_bs_soft', 'ts_soft_bs_soft',
-        'gap', 'T_star_hard', 'T_star_soft'
+        'gap', 'T_star_hard', 'T_star_soft',
+        # Isotonic regression (Task 2)
+        'iso_hard_ece', 'iso_soft_ece',
+        'iso_hard_bs_soft', 'iso_soft_bs_soft',
+        'iso_gap',
     ]
 
     print("\n===== AGGREGATED RESULTS (mean +/- std) =====\n")
     
     final_table = {}
     summary_text = ""
+    gap_comparison_rows = []
 
     for key in sorted(grouped.keys()):
         model, dataset = key
@@ -64,16 +71,52 @@ def aggregate_results():
         summary_text += "\n"
         final_table[f"{model}_{dataset}"] = row
 
+        if 'gap_mean' in row or 'iso_gap_mean' in row:
+            gap_comparison_rows.append({
+                'model': model,
+                'dataset': dataset,
+                'ts_gap_mean': row.get('gap_mean'),
+                'ts_gap_std': row.get('gap_std'),
+                'iso_gap_mean': row.get('iso_gap_mean'),
+                'iso_gap_std': row.get('iso_gap_std'),
+            })
+
     # Save final aggregated table
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
-    with open(TABLES_DIR / 'final_results.json', 'w') as f:
-        json.dump(final_table, f, indent=2)
-    print("All aggregated results saved to results/tables/final_results.json")
+    out_json = TABLES_DIR / f'{out_prefix}.json'
+    out_txt = TABLES_DIR / f'{out_prefix}_summary.txt'
+    out_gap = TABLES_DIR / f'{out_prefix}_ts_vs_iso_gap.json'
+    out_gap_txt = TABLES_DIR / f'{out_prefix}_ts_vs_iso_gap.txt'
 
-    # Save summary text file
-    with open(TABLES_DIR / 'final_results_summary.txt', 'w') as f:
+    with open(out_json, 'w') as f:
+        json.dump(final_table, f, indent=2)
+    print(f"All aggregated results saved to {out_json}")
+
+    with open(out_txt, 'w') as f:
         f.write(summary_text)
-    print("Plain text summary saved to results/tables/final_results_summary.txt")
+    print(f"Plain text summary saved to {out_txt}")
+
+    with open(out_gap, 'w') as f:
+        json.dump(gap_comparison_rows, f, indent=2)
+
+    gap_lines = ["model\tdataset\tts_gap_mean\tts_gap_std\tiso_gap_mean\tiso_gap_std\n"]
+    for r in gap_comparison_rows:
+        gap_lines.append(
+            f"{r['model']}\t{r['dataset']}\t"
+            f"{r['ts_gap_mean'] if r['ts_gap_mean'] is not None else 'N/A'}\t"
+            f"{r['ts_gap_std'] if r['ts_gap_std'] is not None else 'N/A'}\t"
+            f"{r['iso_gap_mean'] if r['iso_gap_mean'] is not None else 'N/A'}\t"
+            f"{r['iso_gap_std'] if r['iso_gap_std'] is not None else 'N/A'}\n"
+        )
+    with open(out_gap_txt, 'w') as f:
+        f.writelines(gap_lines)
+    print(f"TS vs isotonic gap table saved to {out_gap} and {out_gap_txt}")
 
 if __name__ == "__main__":
-    aggregate_results()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--results_dir', type=str, default=None,
+                        help='Directory of per-seed result JSON files')
+    parser.add_argument('--out_prefix', type=str, default='final_results',
+                        help='Output filename prefix under results/tables/')
+    args = parser.parse_args()
+    aggregate_results(raw_results_dir=args.results_dir, out_prefix=args.out_prefix)

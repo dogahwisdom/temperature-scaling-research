@@ -1,0 +1,153 @@
+MODEL: bert-base-uncased | DATASET: ChaosNLI-M | RUNS: 3
+  test_accuracy    : 0.5308 +/- 0.0077
+  uncal_ece        : 0.2482 +/- 0.0108
+  ts_hard_ece      : 0.2040 +/- 0.0129
+  ts_soft_ece      : 0.0544 +/- 0.0159
+  uncal_bs_soft    : 0.3244 +/- 0.0020
+  ts_hard_bs_soft  : 0.2843 +/- 0.0042
+  ts_soft_bs_soft  : 0.1649 +/- 0.0023
+  gap              : 0.1193 +/- 0.0047
+  T_star_hard      : 1.2228 +/- 0.0182
+  T_star_soft      : 4.1312 +/- 0.0723
+  iso_hard_ece     : 0.1802 +/- 0.0104
+  iso_soft_ece     : 0.0884 +/- 0.0079
+  iso_hard_bs_soft : 0.2642 +/- 0.0066
+  iso_soft_bs_soft : 0.1383 +/- 0.0018
+  iso_gap          : 0.1259 +/- 0.0055
+
+MODEL: bert-base-uncased | DATASET: ChaosNLI-S | RUNS: 3
+  test_accuracy    : 0.7125 +/- 0.0118
+  uncal_ece        : 0.1560 +/- 0.0161
+  ts_hard_ece      : 0.1077 +/- 0.0102
+  ts_soft_ece      : 0.0991 +/- 0.0033
+  uncal_bs_soft    : 0.2394 +/- 0.0178
+  ts_hard_bs_soft  : 0.2059 +/- 0.0123
+  ts_soft_bs_soft  : 0.1562 +/- 0.0101
+  gap              : 0.0497 +/- 0.0023
+  T_star_hard      : 1.3405 +/- 0.0626
+  T_star_soft      : 3.1270 +/- 0.2358
+  iso_hard_ece     : 0.1046 +/- 0.0101
+  iso_soft_ece     : 0.0943 +/- 0.0083
+  iso_hard_bs_soft : 0.1949 +/- 0.0057
+  iso_soft_bs_soft : 0.1398 +/- 0.0043
+  iso_gap          : 0.0551 +/- 0.0019
+
+MODEL: bert-large-uncased | DATASET: ChaosNLI-M | RUNS: 3
+  test_accuracy    : 0.5225 +/- 0.0089
+  uncal_ece        : 0.1730 +/- 0.0073
+  ts_hard_ece      : 0.1492 +/- 0.0100
+  ts_soft_ece      : 0.0544 +/- 0.0109
+  uncal_bs_soft    : 0.2491 +/- 0.0024
+  ts_hard_bs_soft  : 0.2320 +/- 0.0063
+  ts_soft_bs_soft  : 0.1580 +/- 0.0024
+  gap              : 0.0740 +/- 0.0042
+  T_star_hard      : 1.1230 +/- 0.0664
+  T_star_soft      : 3.1368 +/- 0.1393
+  iso_hard_ece     : 0.1721 +/- 0.0092
+  iso_soft_ece     : 0.0580 +/- 0.0044
+  iso_hard_bs_soft : 0.2464 +/- 0.0021
+  iso_soft_bs_soft : 0.1456 +/- 0.0007
+  iso_gap          : 0.1008 +/- 0.0013
+
+MODEL: bert-large-uncased | DATASET: ChaosNLI-S | RUNS: 3
+  test_accuracy    : 0.5341 +/- 0.0218
+  uncal_ece        : 0.1451 +/- 0.0325
+  ts_hard_ece      : 0.1553 +/- 0.0014
+  ts_soft_ece      : 0.0599 +/- 0.0146
+  uncal_bs_soft    : 0.3168 +/- 0.0342
+  ts_hard_bs_soft  : 0.3184 +/- 0.0210
+  ts_soft_bs_soft  : 0.2650 +/- 0.0137
+  gap              : 0.0534 +/- 0.0073
+  T_star_hard      : 0.9801 +/- 0.1023
+  T_star_soft      : 2.1458 +/- 0.3511
+  iso_hard_ece     : 0.1306 +/- 0.0060
+  iso_soft_ece     : 0.0395 +/- 0.0085
+  iso_hard_bs_soft : 0.3073 +/- 0.0014
+  iso_soft_bs_soft : 0.2385 +/- 0.0013
+  iso_gap          : 0.0688 +/- 0.0005
+
+MODEL: distilbert-base-uncased | DATASET: ChaosNLI-M | RUNS: 3
+  test_accuracy    : 0.5008 +/- 0.0139
+  uncal_ece        : 0.2921 +/- 0.0142
+  ts_hard_ece      : 0.2412 +/- 0.0149
+  ts_soft_ece      : 0.0410 +/- 0.0051
+  uncal_bs_soft    : 0.3546 +/- 0.0095
+  ts_hard_bs_soft  : 0.3025 +/- 0.0109
+  ts_soft_bs_soft  : 0.1688 +/- 0.0040
+  gap              : 0.1336 +/- 0.0069
+  T_star_hard      : 1.2673 +/- 0.0201
+  T_star_soft      : 4.4148 +/- 0.1525
+  iso_hard_ece     : 0.2141 +/- 0.0074
+  iso_soft_ece     : 0.0728 +/- 0.0088
+  iso_hard_bs_soft : 0.2797 +/- 0.0077
+  iso_soft_bs_soft : 0.1438 +/- 0.0026
+  iso_gap          : 0.1359 +/- 0.0052
+
+MODEL: distilbert-base-uncased | DATASET: ChaosNLI-S | RUNS: 3
+  test_accuracy    : 0.7481 +/- 0.0104
+  uncal_ece        : 0.1772 +/- 0.0143
+  ts_hard_ece      : 0.0914 +/- 0.0098
+  ts_soft_ece      : 0.1302 +/- 0.0076
+  uncal_bs_soft    : 0.2449 +/- 0.0096
+  ts_hard_bs_soft  : 0.1845 +/- 0.0051
+  ts_soft_bs_soft  : 0.1397 +/- 0.0041
+  gap              : 0.0448 +/- 0.0012
+  T_star_hard      : 1.8306 +/- 0.0548
+  T_star_soft      : 4.3366 +/- 0.1585
+  iso_hard_ece     : 0.0871 +/- 0.0017
+  iso_soft_ece     : 0.1018 +/- 0.0039
+  iso_hard_bs_soft : 0.1799 +/- 0.0035
+  iso_soft_bs_soft : 0.1263 +/- 0.0027
+  iso_gap          : 0.0536 +/- 0.0014
+
+MODEL: resnet101 | DATASET: CIFAR-10H | RUNS: 3
+  test_accuracy    : 0.9081 +/- 0.0078
+  uncal_ece        : 0.0435 +/- 0.0010
+  ts_hard_ece      : 0.0184 +/- 0.0004
+  ts_soft_ece      : 0.0219 +/- 0.0059
+  uncal_bs_soft    : 0.1203 +/- 0.0100
+  ts_hard_bs_soft  : 0.1112 +/- 0.0109
+  ts_soft_bs_soft  : 0.1079 +/- 0.0112
+  gap              : 0.0033 +/- 0.0004
+  T_star_hard      : 1.4321 +/- 0.0672
+  T_star_soft      : 1.8889 +/- 0.0889
+  iso_hard_ece     : 0.0197 +/- 0.0011
+  iso_soft_ece     : 0.0214 +/- 0.0035
+  iso_hard_bs_soft : 0.1115 +/- 0.0114
+  iso_soft_bs_soft : 0.1081 +/- 0.0112
+  iso_gap          : 0.0034 +/- 0.0010
+
+MODEL: resnet18 | DATASET: CIFAR-10H | RUNS: 3
+  test_accuracy    : 0.9249 +/- 0.0016
+  uncal_ece        : 0.0341 +/- 0.0011
+  ts_hard_ece      : 0.0126 +/- 0.0012
+  ts_soft_ece      : 0.0221 +/- 0.0022
+  uncal_bs_soft    : 0.1005 +/- 0.0008
+  ts_hard_bs_soft  : 0.0933 +/- 0.0004
+  ts_soft_bs_soft  : 0.0910 +/- 0.0006
+  gap              : 0.0023 +/- 0.0003
+  T_star_hard      : 1.4025 +/- 0.0110
+  T_star_soft      : 1.7722 +/- 0.0394
+  iso_hard_ece     : 0.0126 +/- 0.0014
+  iso_soft_ece     : 0.0248 +/- 0.0002
+  iso_hard_bs_soft : 0.0937 +/- 0.0007
+  iso_soft_bs_soft : 0.0914 +/- 0.0004
+  iso_gap          : 0.0022 +/- 0.0003
+
+MODEL: resnet50 | DATASET: CIFAR-10H | RUNS: 3
+  test_accuracy    : 0.8860 +/- 0.0027
+  uncal_ece        : 0.0363 +/- 0.0031
+  ts_hard_ece      : 0.0196 +/- 0.0021
+  ts_soft_ece      : 0.0223 +/- 0.0035
+  uncal_bs_soft    : 0.1431 +/- 0.0024
+  ts_hard_bs_soft  : 0.1386 +/- 0.0029
+  ts_soft_bs_soft  : 0.1357 +/- 0.0038
+  gap              : 0.0029 +/- 0.0009
+  T_star_hard      : 1.1978 +/- 0.0369
+  T_star_soft      : 1.5388 +/- 0.0554
+  iso_hard_ece     : 0.0213 +/- 0.0011
+  iso_soft_ece     : 0.0200 +/- 0.0034
+  iso_hard_bs_soft : 0.1389 +/- 0.0033
+  iso_soft_bs_soft : 0.1365 +/- 0.0033
+  iso_gap          : 0.0024 +/- 0.0001
+
