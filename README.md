@@ -82,9 +82,20 @@ Use `--results_dir results/raw_v2` to avoid overwriting verified `results/raw/` 
 
 **Vision (CIFAR-10H)** — soft-label gap ≈ 0.002 / 0.003 / 0.003 for ResNet-18 / 50 / 101.
 
-**Language (ChaosNLI)** — soft-label gap ≈ 0.045–0.134; mean language gap ≈ 0.079 (≈30× vision). ChaosNLI-S is monotonic in scale; ChaosNLI-M ordering is inconclusive (near-chance accuracy). BERT-large / ChaosNLI-S uses an independent SNLI checkpoint (`T_hard ≈ 0.980`).
+**Language (ChaosNLI)** — soft-label gap ≈ 0.045–0.134; mean language gap ≈ 0.079 (≈28× vision). ChaosNLI-S is monotonic in scale; ChaosNLI-M ordering is inconclusive (near-chance accuracy). BERT-large / ChaosNLI-S uses an independent SNLI checkpoint (`T_hard ≈ 0.980`).
 
 **Isotonic regression** — positive soft-label gaps in all nine configurations (see `results/tables/final_results_v2_ts_vs_iso_gap.txt`).
+
+## Verify the results
+
+Recompute Tables 1–3 and the derived prose claims from the released per-seed JSON only (no training or GPU):
+
+```bash
+jupyter nbconvert --to notebook --execute experiments/reproduce_results.ipynb --inplace
+# or open experiments/reproduce_results.ipynb and Run All
+```
+
+The notebook is read-only with respect to `results/`: it loads `results/raw/` (and `results/raw_v2/` for isotonic / independent BERT-large SNLI fields), re-aggregates independently of `aggregate.py`, and diffs against `paper/main.tex`.
 
 ## Citation
 

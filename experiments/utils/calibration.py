@@ -22,30 +22,67 @@ def brier_loss_soft(T, logits, soft_targets):
     return np.mean(np.sum((probs - soft_targets) ** 2, axis=1))
 
 
+def _validate_logits(logits, name="logits"):
+    logits = np.asarray(logits, dtype=np.float64)
+    if logits.ndim != 2:
+        raise ValueError(f"{name} must be 2-D, got shape {logits.shape}")
+    if not np.isfinite(logits).all():
+        n_nan = int(np.isnan(logits).sum())
+        n_inf = int(np.isinf(logits).sum())
+        raise ValueError(
+            f"{name} contains non-finite values (nan={n_nan}, inf={n_inf})"
+        )
+    return logits
+
+
+def _assert_temperature_fit(result, x0=1.0, name="temperature"):
+    """Reject silent optimizer failures that leave T at the starting value."""
+    T = float(result.x[0])
+    if not bool(result.success):
+        raise RuntimeError(
+            f"{name} fit failed: success={result.success}, "
+            f"message={getattr(result, 'message', None)!r}, T={T}"
+        )
+    if T == float(x0):
+        raise RuntimeError(
+            f"{name} fit returned the untouched starting value T={T} "
+            f"(x0={x0}); logits are likely degenerate or optimization did not move."
+        )
+    if not np.isfinite(T):
+        raise RuntimeError(f"{name} fit returned non-finite T={T}")
+    return T
+
+
 def fit_temperature_hard(logits, labels):
     """Fit T* by minimising NLL against hard labels."""
+    logits = _validate_logits(logits, name="hard-fit logits")
+    labels = np.asarray(labels)
+    x0 = [1.0]
     result = minimize(
         nll_loss_hard,
-        x0=[1.0],
+        x0=x0,
         args=(logits, labels),
         method="L-BFGS-B",
         bounds=[(0.01, 20.0)],
         options={"maxiter": 100},
     )
-    return float(result.x[0])
+    return _assert_temperature_fit(result, x0=x0[0], name="fit_temperature_hard")
 
 
 def fit_temperature_soft(logits, soft_targets):
     """Fit T* by minimising Brier Score against soft label distributions."""
+    logits = _validate_logits(logits, name="soft-fit logits")
+    soft_targets = np.asarray(soft_targets, dtype=np.float64)
+    x0 = [1.0]
     result = minimize(
         brier_loss_soft,
-        x0=[1.0],
+        x0=x0,
         args=(logits, soft_targets),
         method="L-BFGS-B",
         bounds=[(0.01, 20.0)],
         options={"maxiter": 100},
     )
-    return float(result.x[0])
+    return _assert_temperature_fit(result, x0=x0[0], name="fit_temperature_soft")
 
 
 def compute_ece(probs, labels, n_bins=15):
