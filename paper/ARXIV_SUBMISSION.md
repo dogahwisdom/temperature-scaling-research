@@ -33,8 +33,9 @@ pdflatex -interaction=nonstopmode main.tex
 | Author | Wisdom Dogah |
 | Affiliation | University of Mines and Technology (UMaT), Tarkwa, Ghana; BlackMatrix AI Research, Accra, Ghana |
 | Email | wisdom@blackmatrix.io |
-| Primary category | cs.LG |
-| Secondary | stat.ML |
+| Primary category | **cs.LG** (Machine Learning) |
+| Secondary / cross-list | **stat.ML**; optionally **cs.CL** and/or **cs.CV** |
+| About cs.AI | You *can* add **cs.AI** as a cross-list, but arXiv defines cs.AI as AI *excluding* Machine Learning (which has its own category). Moderators often reclassify ML calibration papers to **cs.LG**. Prefer **cs.LG** as primary. |
 | Comments | Source, experiment scripts, and per-seed metrics: https://github.com/dogahwisdom/temperature-scaling-research |
 
 ## Integrity checklist (pre-submit)
