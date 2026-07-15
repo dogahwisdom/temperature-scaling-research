@@ -389,13 +389,13 @@ TS-Soft is an oracle condition that requires soft labels at fit time.}
 Model & Acc. & Uncal ECE & TS-H ECE & TS-S ECE & TS-H BS & TS-S BS & Gap \\
 \midrule
 ResNet-18
-  & 0.898 (0.039)
-  & 0.030 (0.006)
-  & 0.016 (0.004)
-  & 0.021 (0.002)
-  & 0.127 (0.048)
-  & 0.126 (0.049)
-  & 0.002 (0.001) \\
+  & 0.925 (0.002)
+  & 0.034 (0.001)
+  & 0.013 (0.001)
+  & 0.022 (0.002)
+  & 0.093 (0.000)
+  & 0.091 (0.001)
+  & 0.002 (0.000) \\
 ResNet-50
   & 0.886 (0.003)
   & 0.036 (0.003)
@@ -422,7 +422,7 @@ calibration gap is positive for all three models (H1 supported) and
 increases with scale from 0.002 to 0.003 (H2 supported in vision). The
 absolute magnitude is modest: the largest gap is roughly 3\% of the
 TS-Hard Brier Score for ResNet-101. The
-$T_{\mathrm{oracle}}/T_{\mathrm{hard}}$ ratio ranges from 1.19 to 1.32,
+$T_{\mathrm{oracle}}/T_{\mathrm{hard}}$ ratio ranges from 1.26 to 1.32,
 consistent with comparatively low annotator disagreement in CIFAR-10H.
 
 \subsection{Language: ChaosNLI}
@@ -512,7 +512,7 @@ alignment. We treat ChaosNLI-M as inconclusive for H2.
 \subsection{Temperature Ratios}
 
 $T_{\mathrm{oracle}}$ exceeds $T_{\mathrm{hard}}$ in all nine
-configurations, from 1.19 (ResNet-18) to 3.48 (DistilBERT on
+configurations, from 1.26 (ResNet-18) to 3.48 (DistilBERT on
 ChaosNLI-M). This ratio measures how much smoothing hard-label
 calibration leaves unrealized and is consistently larger in language.
 
@@ -552,11 +552,11 @@ temperature scaling alone.
 
 H1 is supported across all nine configurations for temperature scaling
 and for isotonic regression. Gap-to-standard-deviation ratios for
-temperature scaling exceed 8 in five of the eight configurations whose
+temperature scaling exceed 8 in five of the seven configurations whose
 reported standard deviation does not round to 0.000 at three decimals,
-and exceed 18 in five language-heavy cases. H2 is supported in vision
+and exceed 18 in four language cases. H2 is supported in vision
 and on ChaosNLI-S; ChaosNLI-M is inconclusive. H3 is supported: the mean
-language gap (0.079) is about 30 times the mean vision gap (0.003) when
+language gap (0.079) is about 28 times the mean vision gap (0.003) when
 computed from unrounded means.
 
 \section{Implications}

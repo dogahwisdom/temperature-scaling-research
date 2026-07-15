@@ -1,0 +1,74 @@
+[
+  {
+    "model": "bert-base-uncased",
+    "dataset": "ChaosNLI-M",
+    "ts_gap_mean": 0.11934413351956907,
+    "ts_gap_std": 0.004674924561365712,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  },
+  {
+    "model": "bert-base-uncased",
+    "dataset": "ChaosNLI-S",
+    "ts_gap_mean": 0.049718890083790795,
+    "ts_gap_std": 0.0023099900806856535,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  },
+  {
+    "model": "bert-large-uncased",
+    "dataset": "ChaosNLI-M",
+    "ts_gap_mean": 0.07405476453168851,
+    "ts_gap_std": 0.004125162724587459,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  },
+  {
+    "model": "bert-large-uncased",
+    "dataset": "ChaosNLI-S",
+    "ts_gap_mean": 0.05237748735626314,
+    "ts_gap_std": 0.005585841270552268,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  },
+  {
+    "model": "distilbert-base-uncased",
+    "dataset": "ChaosNLI-M",
+    "ts_gap_mean": 0.1336461699202672,
+    "ts_gap_std": 0.006927519738484277,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  },
+  {
+    "model": "distilbert-base-uncased",
+    "dataset": "ChaosNLI-S",
+    "ts_gap_mean": 0.04480440246489093,
+    "ts_gap_std": 0.0011722261603264064,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  },
+  {
+    "model": "resnet101",
+    "dataset": "CIFAR-10H",
+    "ts_gap_mean": 0.003280468221007119,
+    "ts_gap_std": 0.00038531802294579934,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  },
+  {
+    "model": "resnet18",
+    "dataset": "CIFAR-10H",
+    "ts_gap_mean": 0.0023470931759523397,
+    "ts_gap_std": 0.0002562369765036826,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  },
+  {
+    "model": "resnet50",
+    "dataset": "CIFAR-10H",
+    "ts_gap_mean": 0.0028640865080530875,
+    "ts_gap_std": 0.0008732069370759897,
+    "iso_gap_mean": null,
+    "iso_gap_std": null
+  }
+]

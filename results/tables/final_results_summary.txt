@@ -9,6 +9,11 @@ MODEL: bert-base-uncased | DATASET: ChaosNLI-M | RUNS: 3
   gap              : 0.1193 +/- 0.0047
   T_star_hard      : 1.2228 +/- 0.0182
   T_star_soft      : 4.1312 +/- 0.0723
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
 MODEL: bert-base-uncased | DATASET: ChaosNLI-S | RUNS: 3
   test_accuracy    : 0.7125 +/- 0.0118
@@ -21,6 +26,11 @@ MODEL: bert-base-uncased | DATASET: ChaosNLI-S | RUNS: 3
   gap              : 0.0497 +/- 0.0023
   T_star_hard      : 1.3405 +/- 0.0626
   T_star_soft      : 3.1270 +/- 0.2358
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
 MODEL: bert-large-uncased | DATASET: ChaosNLI-M | RUNS: 3
   test_accuracy    : 0.5225 +/- 0.0089
@@ -33,6 +43,11 @@ MODEL: bert-large-uncased | DATASET: ChaosNLI-M | RUNS: 3
   gap              : 0.0741 +/- 0.0041
   T_star_hard      : 1.1226 +/- 0.0660
   T_star_soft      : 3.1362 +/- 0.1384
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
 MODEL: bert-large-uncased | DATASET: ChaosNLI-S | RUNS: 3
   test_accuracy    : 0.5702 +/- 0.0097
@@ -45,6 +60,11 @@ MODEL: bert-large-uncased | DATASET: ChaosNLI-S | RUNS: 3
   gap              : 0.0524 +/- 0.0056
   T_star_hard      : 0.9255 +/- 0.0282
   T_star_soft      : 2.1127 +/- 0.1183
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
 MODEL: distilbert-base-uncased | DATASET: ChaosNLI-M | RUNS: 3
   test_accuracy    : 0.5008 +/- 0.0139
@@ -57,6 +77,11 @@ MODEL: distilbert-base-uncased | DATASET: ChaosNLI-M | RUNS: 3
   gap              : 0.1336 +/- 0.0069
   T_star_hard      : 1.2673 +/- 0.0201
   T_star_soft      : 4.4148 +/- 0.1525
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
 MODEL: distilbert-base-uncased | DATASET: ChaosNLI-S | RUNS: 3
   test_accuracy    : 0.7481 +/- 0.0104
@@ -69,6 +94,11 @@ MODEL: distilbert-base-uncased | DATASET: ChaosNLI-S | RUNS: 3
   gap              : 0.0448 +/- 0.0012
   T_star_hard      : 1.8306 +/- 0.0548
   T_star_soft      : 4.3366 +/- 0.1585
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
 MODEL: resnet101 | DATASET: CIFAR-10H | RUNS: 3
   test_accuracy    : 0.9081 +/- 0.0078
@@ -81,18 +111,28 @@ MODEL: resnet101 | DATASET: CIFAR-10H | RUNS: 3
   gap              : 0.0033 +/- 0.0004
   T_star_hard      : 1.4321 +/- 0.0672
   T_star_soft      : 1.8889 +/- 0.0889
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
 MODEL: resnet18 | DATASET: CIFAR-10H | RUNS: 3
-  test_accuracy    : 0.8979 +/- 0.0393
-  uncal_ece        : 0.0302 +/- 0.0062
-  ts_hard_ece      : 0.0156 +/- 0.0044
-  ts_soft_ece      : 0.0214 +/- 0.0019
-  uncal_bs_soft    : 0.1323 +/- 0.0446
-  ts_hard_bs_soft  : 0.1273 +/- 0.0481
-  ts_soft_bs_soft  : 0.1257 +/- 0.0493
-  gap              : 0.0017 +/- 0.0012
-  T_star_hard      : 1.2676 +/- 0.1895
-  T_star_soft      : 1.5074 +/- 0.3606
+  test_accuracy    : 0.9249 +/- 0.0016
+  uncal_ece        : 0.0341 +/- 0.0011
+  ts_hard_ece      : 0.0126 +/- 0.0012
+  ts_soft_ece      : 0.0221 +/- 0.0022
+  uncal_bs_soft    : 0.1005 +/- 0.0008
+  ts_hard_bs_soft  : 0.0933 +/- 0.0004
+  ts_soft_bs_soft  : 0.0910 +/- 0.0006
+  gap              : 0.0023 +/- 0.0003
+  T_star_hard      : 1.4025 +/- 0.0110
+  T_star_soft      : 1.7722 +/- 0.0394
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
 MODEL: resnet50 | DATASET: CIFAR-10H | RUNS: 3
   test_accuracy    : 0.8860 +/- 0.0027
@@ -105,4 +145,9 @@ MODEL: resnet50 | DATASET: CIFAR-10H | RUNS: 3
   gap              : 0.0029 +/- 0.0009
   T_star_hard      : 1.1978 +/- 0.0369
   T_star_soft      : 1.5388 +/- 0.0554
+  iso_hard_ece     : N/A
+  iso_soft_ece     : N/A
+  iso_hard_bs_soft : N/A
+  iso_soft_bs_soft : N/A
+  iso_gap          : N/A
 
