@@ -109,6 +109,8 @@ dmypy.json
 !results/raw/results_*.json
 !results/tables/final_results.json
 !results/tables/final_results_summary.txt
+!results/tables/final_results_ts_vs_iso_gap.json
+!results/tables/final_results_ts_vs_iso_gap.txt
 !results/tables/final_results_v2.json
 !results/tables/final_results_v2_summary.txt
 !results/tables/final_results_v2_ts_vs_iso_gap.json

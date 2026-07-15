@@ -1,7 +1,8 @@
 # Experiments
 
-Scripts that produce the per-seed metrics in `results/raw/` (and optional
-re-runs under `results/raw_v2/`).
+Scripts that produce the per-seed metrics in `results/raw/` (temperature
+scaling + isotonic fields). That directory is the single source of truth for
+`aggregate.py` and `reproduce_results.ipynb`.
 
 ## Pipelines
 
@@ -13,6 +14,7 @@ re-runs under `results/raw_v2/`).
 | `utils/calibration.py` | Shared temperature scaling + multiclass isotonic regression |
 | `run_all.py` | Orchestrate all configs; supports `--results_dir` |
 | `aggregate.py` | Mean/std tables, including TS vs isotonic gaps |
+| `reproduce_results.ipynb` | Read-only verification of Tables 1–3 against `results/raw/` |
 
 ## Protocol
 
@@ -37,12 +39,12 @@ starting from a domain-matched checkpoint. BERT-large SNLI uses
 ## Reproduction
 
 ```bash
+# Full sweep writes under results/raw/ (overwrites released metrics — use with care)
 python experiments/run_all.py --results_dir results/raw
 python experiments/aggregate.py --results_dir results/raw
 
-# Re-run without overwriting verified raw files
-python experiments/run_all.py --results_dir results/raw_v2
-python experiments/aggregate.py --results_dir results/raw_v2 --out_prefix final_results_v2
+# Verify released numbers without training
+jupyter nbconvert --to notebook --execute experiments/reproduce_results.ipynb --inplace
 ```
 
 Checkpoints under `checkpoints/` and logits under `results/logits/` are local

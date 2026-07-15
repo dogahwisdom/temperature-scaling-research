@@ -41,7 +41,7 @@ pdflatex -interaction=nonstopmode main.tex
 ## Integrity checklist (pre-submit)
 
 - [x] Vision Table 1 numbers match verified `results/raw/` (ResNet-18 seed 42 recalibrated from cached logits)
-- [x] Language Table 2 uses corrected BERT-large SNLI from independent checkpoint (`results/raw_v2/`)
+- [x] Language Table 2 uses corrected BERT-large SNLI from independent checkpoint (in `results/raw/`)
 - [x] Methods match released code (30 vision epochs; 10k/1-epoch language adaptation)
 - [x] ChaosNLI-M described as matched-domain (not SNLI-to-MNLI mismatch)
 - [x] Isotonic baseline included (Table 3); no fabricated gap reversals

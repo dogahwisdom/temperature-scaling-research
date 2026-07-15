@@ -76,7 +76,7 @@ python experiments/run_all.py
 python experiments/aggregate.py
 ```
 
-Use `--results_dir results/raw_v2` to avoid overwriting verified `results/raw/` files. Logits are saved under `results/logits/` when present.
+Verified per-seed metrics (temperature scaling + isotonic) live under `results/raw/`. Optional local re-runs can write elsewhere; do not overwrite `results/raw/` unless intentionally refreshing the released numbers. Logits (local, gitignored) live under `results/logits/` when present.
 
 ## Key results (verified means over seeds 42, 123, 456)
 
@@ -95,7 +95,7 @@ jupyter nbconvert --to notebook --execute experiments/reproduce_results.ipynb --
 # or open experiments/reproduce_results.ipynb and Run All
 ```
 
-The notebook is read-only with respect to `results/`: it loads `results/raw/` (and `results/raw_v2/` for isotonic / independent BERT-large SNLI fields), re-aggregates independently of `aggregate.py`, and diffs against `paper/main.tex`.
+The notebook is read-only with respect to `results/`: it loads every file in `results/raw/` (TS + `iso_*` fields), re-aggregates independently of `aggregate.py`, and diffs against `paper/main.tex`.
 
 ## Citation
 
